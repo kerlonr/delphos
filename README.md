@@ -15,6 +15,12 @@
   <img src="https://img.shields.io/badge/app-Windows-0078D6" alt="Windows">
 </p>
 
+<p align="center">
+  <img src="docs/screens/abertura.gif" alt="Abertura do app Delphos" height="400">
+  &nbsp;
+  <img src="docs/screens/teclas.png" alt="Configurando uma tecla no app Delphos" height="400">
+</p>
+
 ---
 
 ## O que faz
@@ -34,7 +40,7 @@
 
 1. Baixe o `Delphos.exe` na [última release](https://github.com/kerlonr/delphos/releases/latest).
 2. Plugue o Delphos no USB e abra o `Delphos.exe`.
-3. Em **Ajustes**, clique em **Atualizar firmware**. O firmware já vem embutido no app.
+3. Abra o menu (☰) e vá em **Ajustes > Atualizar firmware**. O firmware já vem embutido no app.
    - Se o teclado ainda estiver com o firmware antigo, o app pede para entrar no modo de gravação:
      aperte **2 vezes rápido** o botão de reset do Pro Micro (ou segure a tecla do canto superior
      esquerdo enquanto pluga o cabo).
@@ -44,6 +50,14 @@
 Pronto. Fechar a janela deixa o app na bandeja; para sair, use *Sair* no ícone da bandeja.
 
 > Não é preciso instalar VIA, QMK Toolbox, mixer de volume nem app de mute: o `Delphos.exe` faz tudo.
+
+## Telas
+
+<p align="center">
+  <img src="docs/screens/telas.png" alt="Tela inicial, mixer e menu do app Delphos" width="880">
+</p>
+
+<p align="center"><sub>Tela inicial com o espelho da tela do Delphos, mixer por app e o menu.</sub></p>
 
 ## Mapa padrão
 
@@ -62,16 +76,22 @@ Encoder: Volume - / Volume +    Lock = Win+L
 
 ## O app
 
-- **Teclas**: escolha a camada (0 a 3), clique numa tecla ou no encoder do desenho e escolha a função:
-  Delphos, mídia, sistema, F-keys, letras, camadas (`TO`, `MO`, `TG`), um atalho gravado na hora ou
-  qualquer código QMK em hexadecimal. Vale na hora. *Restaurar teclas padrão* volta ao mapa acima.
+- **Teclas**: clique numa tecla ou no encoder do desenho e a configuração abre num painel ao lado
+  (dá para ir trocando de tecla com ele aberto). Escolha a camada (0 a 3) e a função: Delphos, mídia,
+  sistema, F-keys, letras, camadas (`TO`, `MO`, `TG`), um atalho gravado na hora ou qualquer código QMK
+  em hexadecimal. Vale na hora, sem gravar firmware.
 - **Macros**: a tecla digita um texto e/ou aperta teclas e atalhos, com esperas. Ficam gravadas no
   teclado (16 macros). O texto é digitado como num teclado americano.
-- **Ação no PC**: a tecla abre um programa, um site ou uma pasta, ou muta o som de um app
-  (teclas `Ação 1..16`, precisam do app aberto).
-- **Mixer**: volume e mute de cada app, qual app o encoder controla, música tocando e microfones.
-- **Ajustes**: iniciar com o Windows, passo do volume, atualizar firmware, instalar no PC,
-  backup (exporta e importa as 4 camadas, macros e ações) e pasta do log.
+- **Ação no PC**: a tecla abre um programa, um site ou uma pasta, muta o som de um app ou fecha o app
+  selecionado no Delphos (teclas `Ação 1..16`, precisam do app aberto). Para apps da Microsoft Store,
+  digite o link do app no caminho, por exemplo `spotify:`.
+- **Mixer** (no menu): volume e mute de cada app, qual app o encoder controla, música tocando e
+  microfones. Apps com controle de mídia aparecem mesmo antes de tocar algo (ex. Spotify parado), e
+  dá para ocultar os apps que você não quer ver.
+- **Ajustes** (no menu): iniciar com o Windows, passo do volume, atualizar firmware, restaurar teclas
+  padrão, instalar no PC, backup (exporta e importa as 4 camadas, macros e ações) e pasta do log.
+- Com a janela fechada, o app fica na bandeja gastando quase nada (a interface para e o WebView2 é
+  suspenso).
 - O desenho do teclado espelha a tela do Delphos, com a mesma fonte e layout do firmware.
 
 Log: `%LOCALAPPDATA%\Delphos\log.txt`.
