@@ -651,7 +651,7 @@ function playIntro() {
   body.classList.remove("intro-run");
   void body.offsetWidth;
   body.classList.add("intro-run");
-  introTimer = setTimeout(() => body.classList.remove("booting", "intro-run"), 2900);
+  introTimer = setTimeout(() => body.classList.remove("booting", "intro-run"), 4200);
 }
 document.addEventListener("pointerdown", () => {
   if (document.body.classList.contains("intro-run")) {  // clique pula a abertura
@@ -663,7 +663,13 @@ document.addEventListener("pointerdown", () => {
 // Chamados pelo app.py ao esconder e ao abrir a janela.
 window.delphosHidden = () => {
   sleep();
+  // volta ao estado inicial: ao reabrir, a abertura roda limpa (a janela volta ao tamanho compacto no app.py)
   setDrawer(false);
+  captureMode = null;
+  selected = null;
+  renderKeys();
+  body.classList.remove("edit-open");
+  closeSheet();
   document.body.classList.add("booting"); // ao reabrir, a tela já começa limpa para a abertura
 };
 window.delphosShown = () => {

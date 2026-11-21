@@ -150,6 +150,7 @@ def main() -> int:
     def hide():
         api.visible = False
         window.evaluate_js("delphosHidden()")
+        api._editor_width.set(False)  # painel da tecla fechou: janela volta a compacta
         window.hide()
         webview_low_power(window, True)
 

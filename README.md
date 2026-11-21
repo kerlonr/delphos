@@ -146,3 +146,4 @@ Baseado no [delphos-qmk](https://github.com/thalesgmartins/delphos-qmk) de
 [Thales Martins](https://github.com/thalesgmartins), criador do hardware e do firmware original.
 
 O exe embute o [avrdude](https://github.com/avrdudes/avrdude) (GPL-2.0), copiado do QMK MSYS.
+A abertura do app usa a fonte [Michroma](https://github.com/googlefonts/Michroma-font) (SIL Open Font License 1.1, em `app/delphos/ui/fonts/OFL.txt`).
