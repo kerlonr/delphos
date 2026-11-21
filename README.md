@@ -96,7 +96,7 @@ Precisa do [QMK MSYS](https://msys.qmk.fm) com `qmk setup` feito.
 O `build.ps1` liga a pasta do repo em `qmk_firmware\keyboards\delphos_3x4` (junction) e roda
 `qmk compile -kb delphos_3x4 -km default`.
 
-O mapa de teclas fica na EEPROM. Regravar o firmware não reseta o mapa: use *Restaurar teclas padrão* no app.
+O mapa de teclas e as macros ficam na EEPROM e continuam lá depois de atualizar o firmware (o build usa `SKIP_VERSION=yes`, que fixa a data que o VIA usa para validar a EEPROM). Para voltar ao padrão, use *Restaurar teclas padrão* no app.
 
 ### App
 

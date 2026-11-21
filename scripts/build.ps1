@@ -16,10 +16,13 @@ if (Test-Path $link) {
     New-Item -ItemType Junction -Path $link -Target $repo | Out-Null
 }
 
+# SKIP_VERSION fixa a data do build. O VIA usa essa data para validar a EEPROM: com ela mudando,
+# toda atualização de firmware apagava o mapa de teclas e as macros do usuário.
+# Se um dia mudar o formato da EEPROM (número de camadas, tamanho das macros), use "Restaurar teclas padrão".
 $env:MSYSTEM = 'MINGW64'; $env:CHERE_INVOKING = '1'
 Push-Location $repo
 try {
-    & C:\QMK_MSYS\usr\bin\bash.exe -lc "cd '$($qmkHome -replace '\\','/')' && qmk compile -kb delphos_3x4 -km default"
+    & C:\QMK_MSYS\usr\bin\bash.exe -lc "cd '$($qmkHome -replace '\\','/')' && qmk compile -kb delphos_3x4 -km default -e SKIP_VERSION=yes"
     if ($LASTEXITCODE -ne 0) { throw "qmk compile falhou ($LASTEXITCODE)" }
     Copy-Item (Join-Path $qmkHome 'delphos_3x4_default.hex') $repo -Force
     Write-Host "OK: $repo\delphos_3x4_default.hex"
