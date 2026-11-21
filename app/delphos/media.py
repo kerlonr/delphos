@@ -25,6 +25,41 @@ def match_session(aumids: list[str], exe_key: str | None) -> int | None:
     return None
 
 
+class MediaOnlyChannel:
+    """App com controle de mídia mas sem sessão de áudio (ex. Spotify aberto sem tocar nada).
+    O Windows só cria a sessão de áudio quando o app toca algo; até lá volume e mute não fazem nada."""
+    silent = True
+
+    def __init__(self, key: str, name: str) -> None:
+        self.key, self.name = key, name
+
+    def get_volume(self) -> float:
+        return 1.0
+
+    def set_volume(self, v: float) -> None:
+        pass
+
+    def get_mute(self) -> bool:
+        return False
+
+    def set_mute(self, m: bool) -> None:
+        pass
+
+
+def media_only(aumids: list[str], audio_keys: set[str], running: set[str]) -> list[MediaOnlyChannel]:
+    """Canais para os apps com mídia que ainda não têm áudio. A chave ("spotify.exe") é a mesma que o
+    canal de áudio terá depois, então o item continua selecionado quando o app começa a tocar.
+    Só entra app com processo rodando (descarta ids que não são nome de exe, como o do Firefox)."""
+    found: dict[str, MediaOnlyChannel] = {}
+    for aumid in aumids:
+        name = aumid.split("!")[-1]
+        key = name.lower() + ".exe"
+        if key not in running or key in found or any(match_session([aumid], k) == 0 for k in audio_keys):
+            continue
+        found[key] = MediaOnlyChannel(key, name)
+    return list(found.values())
+
+
 def media_text(title: str, artist: str) -> str:
     return f"{title}{SEP}{artist}" if title and artist else title
 
@@ -65,6 +100,17 @@ class Media:
                p.EV_NEXT_TRACK: session.try_skip_next_async,
                p.EV_PREV_TRACK: session.try_skip_previous_async}[action]
         return await run()
+
+    async def _ids(self):
+        if self._manager is None:
+            self._manager = await SessionManager.request_async()
+        return [s.source_app_user_model_id for s in self._manager.get_sessions()]
+
+    def app_ids(self) -> list[str]:
+        try:
+            return self._run(self._ids())
+        except Exception:
+            return []
 
     def info(self, exe_key: str | None) -> tuple[int, str]:
         try:

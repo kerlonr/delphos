@@ -53,6 +53,7 @@ class Api:
         return {
             "connected": connected, "mic_muted": e.mic_muted, "screen": screen,
             "apps": e.snapshot["apps"], "mics": e.snapshot["mics"],
+            "hidden_apps": [{"key": k, "name": n} for k, n in self._prefs.get("hidden_apps", {}).items()],
             "media": {"status": status, "text": text},
             "firmware": {"installed": self._fw_installed, "bundled": firmware.BUNDLED_FW_VERSION} if connected else None,
             "flash": self._flash_state,
@@ -173,6 +174,12 @@ class Api:
 
     def toggle_mute(self, key: str) -> None:
         self._engine.toggle_mute(key)
+
+    def hide_app(self, key: str, name: str) -> None:
+        self._engine.set_hidden(key, name, True)
+
+    def show_app(self, key: str) -> None:
+        self._engine.set_hidden(key, "", False)
 
     def toggle_mic(self) -> None:
         self._engine.press(p.EV_MIC_MUTE)

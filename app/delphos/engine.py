@@ -7,10 +7,12 @@ import time
 from typing import Callable
 
 import comtypes
+import psutil
 
 from . import actions, audio, settings
 from . import protocol as p
 from .hidlink import HidLink
+from .media import media_only
 from .media import Media
 from .mixer import Mixer, ordered
 
@@ -86,19 +88,36 @@ class Engine:
                     c.set_mute(not c.get_mute())
         self.events.put(run)
 
+    def set_hidden(self, key: str, name: str, hidden: bool) -> None:
+        """Esconde ou mostra um app no mixer (e no Delphos). Fica salvo nos ajustes."""
+        def run():
+            apps = self.prefs.setdefault("hidden_apps", {})
+            if hidden:
+                apps[key] = name
+            else:
+                apps.pop(key, None)
+            settings.save(self.prefs)
+            self._refresh()
+        self.events.put(run)
+
     # Thread do engine
 
     def _current_key(self) -> str | None:
         return self.mixer.current.key if self.mixer.current else None
 
     def _refresh(self) -> None:
-        self.mixer.refresh(ordered(audio.MasterChannel(), audio.app_channels()))
+        apps = audio.app_channels()
+        running = {p.info["name"].lower() for p in psutil.process_iter(["name"]) if p.info["name"]}
+        apps += media_only(self.media.app_ids(), {c.key for c in apps}, running)
+        hidden = self.prefs.get("hidden_apps", {})
+        self.mixer.refresh(ordered(audio.MasterChannel(), [c for c in apps if c.key not in hidden]))
         self._mics.enforce()
         self.mic_muted = self._mics.is_muted()
         self.snapshot["mics"] = self._mics.list()
         current = self._current_key()
         self.snapshot["apps"] = [{"key": c.key, "name": c.name, "volume": round(c.get_volume() * 100),
-                                  "muted": c.get_mute(), "selected": c.key == current} for c in self.mixer.channels]
+                                  "muted": c.get_mute(), "selected": c.key == current,
+                                  "silent": getattr(c, "silent", False)} for c in self.mixer.channels]
 
     def _apply(self, item, now: float) -> None:
         if callable(item):
@@ -108,7 +127,7 @@ class Engine:
         if event == p.EV_ACTION:
             action = self.actions.get(str(arg))
             if action:
-                actions.run(action, self.mixer.channels)
+                actions.run(action, self.mixer.channels, self._current_key())
         elif event == p.EV_MIC_MUTE:
             self.mic_muted = self._mics.toggle()
             log.info("mic %s", "mudo" if self.mic_muted else "ativo")

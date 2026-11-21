@@ -249,7 +249,7 @@ function openAction() {
 function renderActionFields(target) {
   const type = $("actionType").value;
   const isApp = type === "mute_app";
-  $("actionTarget").hidden = isApp;
+  $("actionTarget").hidden = isApp || type === "close_selected";
   $("actionApp").hidden = !isApp;
   $("actionPick").hidden = !["program", "folder"].includes(type);
   $("actionTarget").placeholder = { program: "Caminho do programa", site: "youtube.com", folder: "Caminho da pasta" }[type] ?? "";
@@ -270,7 +270,7 @@ $("actionSave").addEventListener("click", () => {
   const app = $("actionApp").selectedOptions[0];
   const action = type === "mute_app"
     ? { type, target: app?.value ?? "", label: app?.text ?? "" }
-    : { type, target: $("actionTarget").value };
+    : { type, target: type === "close_selected" ? "" : $("actionTarget").value };
   assign(api.save_action(layer, selected, action));
 });
 
@@ -303,7 +303,11 @@ function buildChannel(app) {
   li.dataset.key = app.key;
   li.innerHTML = `<span class="pick"></span><button class="name"></button>
     <input type="range" min="0" max="100" aria-label="Volume"><output></output>
-    <button class="icon mute" aria-label="Mutar"><svg viewBox="0 0 16 16"><path d="M2 6h3l4-3v10l-4-3H2Z"/><path class="x" d="M11 6l4 4M15 6l-4 4" fill="none"/></svg></button>`;
+    <button class="icon mute" aria-label="Mutar"><svg viewBox="0 0 16 16"><path d="M2 6h3l4-3v10l-4-3H2Z"/><path class="x" d="M11 6l4 4M15 6l-4 4" fill="none"/></svg></button>
+    <button class="icon hide" aria-label="Ocultar do mixer" title="Ocultar do mixer"><svg viewBox="0 0 16 16"><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5Z" fill="none"/><path d="M2 14 14 2" fill="none"/></svg></button>`;
+  const hide = li.querySelector(".hide");
+  hide.hidden = app.key === "__master__";
+  hide.addEventListener("click", () => api.hide_app(app.key, app.name));
   const slider = li.querySelector("input");
   li.querySelector(".name").addEventListener("click", () => api.select(app.key));
   slider.addEventListener("input", () => {
@@ -328,11 +332,30 @@ function renderMixer() {
     li.classList.toggle("off", app.muted);
     li.querySelector(".name").textContent = app.name;
     li.querySelector(".mute").classList.toggle("on", app.muted);
+    li.querySelector(".mute").disabled = app.silent;
+    li.classList.toggle("silent", app.silent);
+    li.title = app.silent ? "Sem som ainda: o volume funciona quando o app tocar algo" : "";
     const slider = li.querySelector("input");
+    slider.disabled = app.silent;
     if (document.activeElement !== slider) {
       slider.value = app.volume;
       li.querySelector("output").textContent = app.volume;
     }
+  }
+
+  const hidden = st.hidden_apps;
+  $("hiddenApps").hidden = !hidden.length;
+  const hkeys = hidden.map((a) => a.key).join("|");
+  if ($("hiddenList").dataset.keys !== hkeys) {
+    $("hiddenList").dataset.keys = hkeys;
+    $("hiddenList").replaceChildren(...hidden.map((a) => {
+      const b = document.createElement("button");
+      b.className = "ghost";
+      b.textContent = `${a.name} ✕`;
+      b.title = "Mostrar de novo no mixer";
+      b.addEventListener("click", () => api.show_app(a.key));
+      return b;
+    }));
   }
 
   const media = st.media;
