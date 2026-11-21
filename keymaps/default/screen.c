@@ -161,7 +161,8 @@ static void draw_media(void) {
     fill(0, MEDIA_Y, W, H - MEDIA_Y, false);
     if (pc.media_status == DP_MEDIA_NONE || !pc.media[0]) return;
     bool playing = pc.media_status == DP_MEDIA_PLAYING;
-    icon(playing ? ic_play : ic_pause, playing ? 4 : 5, 0, MEDIA_Y, true);
+    // mostra o que o botão faz, como no Spotify: tocando = pause, pausado = play
+    icon(playing ? ic_pause : ic_play, playing ? 5 : 4, 0, MEDIA_Y, true);
     char l[DP_MEDIA_MAX + 4];
     media_line(l, sizeof(l));
     if (text_w(l, 1, false) <= W - MEDIA_X) {

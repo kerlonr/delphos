@@ -5,7 +5,7 @@
 
 #define DP_REPORT_SIZE      32
 #define DP_PROTOCOL_VERSION 2
-#define DP_FIRMWARE_VERSION 7
+#define DP_FIRMWARE_VERSION 8
 
 #define DP_STATE      0x40 // PC -> teclado: [1]versão [2]flags (1=mic mudo, 2=item mudo) [3]volume [4]índice [5]total [6..26]nome
 #define DP_EVENT      0x41 // teclado -> PC: [1]evento (DP_EV_*) [2]número da ação (DP_EV_ACTION)

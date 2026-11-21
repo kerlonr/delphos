@@ -94,7 +94,7 @@ function drawMain(s, popup) {
 function drawMedia(media, scrollX) {
   fill(0, MEDIA_Y, W, H - MEDIA_Y, false);
   if (!media.status || !media.text) return;
-  icon(media.status === 1 ? ICONS.play : ICONS.pause, 0, MEDIA_Y, true);
+  icon(media.status === 1 ? ICONS.pause : ICONS.play, 0, MEDIA_Y, true); // tocando = pause, como no Spotify
   const line = mediaLine(media.text);
   if (textW(line, 1, false) <= W - MEDIA_X) {
     text(line, MEDIA_X, MEDIA_Y, 1, false, true, MEDIA_X);

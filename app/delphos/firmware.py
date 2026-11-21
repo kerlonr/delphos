@@ -8,7 +8,7 @@ from . import resource
 
 log = logging.getLogger(__name__)
 
-BUNDLED_FW_VERSION = 7  # DP_FIRMWARE_VERSION do .hex que vai junto com o app
+BUNDLED_FW_VERSION = 8  # DP_FIRMWARE_VERSION do .hex que vai junto com o app
 
 
 def serial_ports() -> set[str]:
