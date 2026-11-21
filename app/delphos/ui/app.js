@@ -121,7 +121,6 @@ function showEditor(id) {
 
 function renderEditor() {
   const editing = Boolean(selected && device);
-  $("keysEmpty").hidden = editing;
   $("keysEdit").hidden = !editing;
   $("editError").hidden = true;
   if (!editing) return;
@@ -458,27 +457,72 @@ function renderFirmware() {
 
 // Geral
 
-let currentView = "keys";
+// Navegação: o Delphos fica sempre na tela; teclas, mixer e ajustes abrem num painel à direita.
+// O menu (burger) entra pela esquerda.
 
-function moveThumb() {
-  const tab = document.querySelector(`.tabs [data-view="${currentView}"]`);
-  $("tabThumb").style.width = `${tab.offsetWidth}px`;
-  $("tabThumb").style.transform = `translateX(${tab.offsetLeft}px)`;
+let currentView = "home";
+const body = document.body;
+
+const navItem = (view) => (view === "keys" ? "home" : view); // editar tecla fica sob "Teclado"
+
+function moveDrawerThumb() {
+  const item = document.querySelector(`.drawer [data-view="${navItem(currentView)}"]`);
+  $("drawerThumb").style.height = `${item.offsetHeight}px`;
+  $("drawerThumb").style.transform = `translateY(${item.offsetTop}px)`;
 }
 
 function showView(view) {
-  for (const t of document.querySelectorAll("[data-view]")) t.setAttribute("aria-selected", String(t.dataset.view === view));
+  for (const t of document.querySelectorAll(".drawer [data-view]")) t.setAttribute("aria-current", String(t.dataset.view === navItem(view)));
+  if (view === "home") return closeSheet();
   for (const id of ["keys", "mixer", "settings"]) $(`view-${id}`).hidden = id !== view;
-  if (view !== currentView) {
+  if (view !== currentView || !body.classList.contains("sheet-open")) {
     const el = $(`view-${view}`);
     el.classList.remove("enter");
     void el.offsetWidth; // reinicia a animação
     el.classList.add("enter");
+    $("sheet").scrollTop = 0;
+  }
+  if (view !== "keys" && selected) {  // saiu da edição: tira a marca da tecla
+    selected = null;
+    renderKeys();
   }
   currentView = view;
-  moveThumb();
+  body.classList.add("sheet-open");
+  moveDrawerThumb();
 }
-for (const t of document.querySelectorAll("[data-view]")) t.addEventListener("click", () => showView(t.dataset.view));
+
+function closeSheet() {
+  body.classList.remove("sheet-open");
+  currentView = "home";
+  captureMode = null;
+  selected = null;
+  renderKeys();
+  for (const t of document.querySelectorAll(".drawer [data-view]")) t.setAttribute("aria-current", String(t.dataset.view === "home"));
+  moveDrawerThumb();
+}
+
+function setDrawer(open) {
+  body.classList.toggle("drawer-open", open);
+  $("burger").setAttribute("aria-expanded", String(open));
+  if (open) moveDrawerThumb();
+}
+
+for (const t of document.querySelectorAll(".drawer [data-view]")) {
+  t.addEventListener("click", () => {
+    showView(t.dataset.view);
+    setTimeout(() => setDrawer(false), 120); // deixa ver o indicador chegar antes de fechar
+  });
+}
+$("burger").addEventListener("click", () => setDrawer(!body.classList.contains("drawer-open")));
+$("scrim").addEventListener("click", () => setDrawer(false));
+$("sheetClose").addEventListener("click", closeSheet);
+// clique no fundo (fora do Delphos) fecha o painel
+$("sheet").previousElementSibling.addEventListener("click", (e) => { if (e.target === e.currentTarget) closeSheet(); });
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape" || captureMode) return;
+  if (body.classList.contains("drawer-open")) setDrawer(false);
+  else if (body.classList.contains("sheet-open")) closeSheet();
+});
 $("micPill").addEventListener("click", () => api.toggle_mic());
 
 function renderDevice() {
@@ -564,6 +608,7 @@ document.addEventListener("pointerdown", () => {
 // Chamados pelo app.py ao esconder e ao abrir a janela.
 window.delphosHidden = () => {
   sleep();
+  setDrawer(false);
   document.body.classList.add("booting"); // ao reabrir, a tela já começa limpa para a abertura
 };
 window.delphosShown = () => {
@@ -572,7 +617,7 @@ window.delphosShown = () => {
   wake();
 };
 
-window.addEventListener("resize", moveThumb);
+
 
 // Reflexo que segue o mouse no corpo do Delphos (só reage ao mouse, parado não gasta nada).
 $("device").addEventListener("pointermove", (e) => {
@@ -588,7 +633,7 @@ window.addEventListener("pywebviewready", async () => {
   buildKeys();
   renderKeys();
   renderEditor();
-  moveThumb();
+  showView("home");
   await loadSettings();
   if (meta.visible) {
     playIntro();
