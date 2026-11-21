@@ -59,6 +59,7 @@ small { color: var(--text-2); }
 .burger:hover { background: var(--raise); color: var(--text); }
 .burger span {
   position: absolute; left: 9px; width: 14px; height: 1.5px; border-radius: 1px; background: currentColor;
+  transition: transform .45s var(--spring), opacity .2s, width .3s var(--ease);
 }
 .burger span:nth-child(1) { top: 11px; }
 .burger span:nth-child(2) { top: 15.25px; width: 10px; }
@@ -95,7 +96,6 @@ body.drawer-open .burger span:nth-child(3) { transform: translateY(-4.25px) rota
   transition: transform .7s var(--out), opacity .5s var(--ease), filter .5s var(--ease);
 }
 /* painel por cima: o Delphos recua ao fundo, como um modal */
-body.sheet-open .device-wrap { transform: scale(.9); opacity: .25; filter: blur(5px); }
 .tip { color: var(--text-3); font-size: 12px; transition: opacity .3s, transform .4s var(--out); }
 body.edit-open .tip { opacity: 0; transform: translateY(4px); }
 /* aurora: luz roxa e azul bem lenta atrás do Delphos (só com a janela aberta) */
@@ -189,8 +189,8 @@ body.edit-open .tip { opacity: 0; transform: translateY(4px); }
 
 /* Menu lateral */
 .scrim {
-  position: fixed; inset: 0; z-index: 20; background: rgba(4, 3, 7, .55);
-  opacity: 0; pointer-events: none;
+  position: fixed; inset: 0; z-index: 20; background: rgba(4, 3, 7, .55); backdrop-filter: blur(3px);
+  opacity: 0; pointer-events: none; transition: opacity .4s var(--ease);
 }
 body.drawer-open .scrim { opacity: 1; pointer-events: auto; }
 .drawer {
@@ -198,24 +198,31 @@ body.drawer-open .scrim { opacity: 1; pointer-events: auto; }
   display: flex; flex-direction: column; gap: 2px; padding: 62px 10px 14px;
   background: rgba(12, 11, 16, .94); backdrop-filter: blur(24px);
   border-right: 1px solid var(--hair); box-shadow: 30px 0 80px -30px #000;
-  transform: translateX(-102%);
+  transform: translateX(-102%); transition: transform .5s var(--out);
 }
 body.drawer-open .drawer { transform: none; }
 .drawer button {
   position: relative; z-index: 1; display: flex; align-items: center; gap: 11px;
   border: 0; background: none; border-radius: 9px; padding: 9px 12px; text-align: left; color: var(--text-2); font-weight: 500;
-  transition: color var(--fast);
+  opacity: 0; transform: translateX(-18px); filter: blur(4px);
+  transition: opacity .25s, transform .3s var(--ease), filter .25s, color var(--fast);
 }
 .drawer button:hover { color: var(--text); }
 .drawer button[aria-current="true"] { color: var(--text); }
 .drawer button svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; }
 .drawer button svg circle:not([fill]) { fill: currentColor; }
 .drawer button[aria-current="true"] svg { color: var(--ice); }
+body.drawer-open .drawer button, body.drawer-open .drawer .version {
+  opacity: 1; transform: none; filter: none;
+  transition: opacity .4s calc(.12s + var(--n) * .06s), transform .7s var(--pop) calc(.12s + var(--n) * .06s),
+    filter .4s calc(.12s + var(--n) * .06s), color var(--fast);
+}
 .drawer .thumb {
   position: absolute; left: 10px; right: 10px; top: 0; border-radius: 9px;
   background: var(--raise-2); box-shadow: inset 0 0 0 1px var(--hair);
+  transition: transform .45s var(--out), height .3s;
 }
-.drawer .version { margin-top: auto; }
+.drawer .version { margin-top: auto; opacity: 0; transform: translateX(-14px); transition: opacity .2s, transform .3s; }
 
 /* Conteúdo */
 .panel {
@@ -225,9 +232,9 @@ body.drawer-open .drawer { transform: none; }
   background: linear-gradient(180deg, rgba(157, 140, 255, .045), transparent 180px), #0B0A0F;
   border-radius: 20px 20px 0 0; box-shadow: inset 0 1px 0 var(--hair), 0 -30px 80px -20px #000;
   transform: translateY(105%); visibility: hidden;
-  transition: transform .5s var(--out), visibility 0s .5s;
+  transition: transform .3s var(--ease), visibility 0s .3s;
 }
-body.sheet-open .panel { transform: none; visibility: visible; transition: transform .7s var(--pop), visibility 0s; }
+body.sheet-open .panel { transform: none; visibility: visible; transition: transform .35s var(--out), visibility 0s; }
 .close { position: absolute; top: 14px; right: 14px; z-index: 1; }
 
 /* Painel da tecla: a janela alarga para a direita e o painel desliza para dentro.
@@ -252,12 +259,12 @@ body.edit-open .keypanel {
 .close svg { transition: transform .35s var(--spring); }
 .close:hover svg { transform: rotate(90deg); }
 /* conteúdo entra em cascata, desfocado para nítido */
-.view.enter > *, .view.enter #keysEdit > * { animation: rise .5s var(--out) both; }
-.view.enter > :nth-child(2), .view.enter #keysEdit > :nth-child(2) { animation-delay: .04s; }
-.view.enter > :nth-child(3), .view.enter #keysEdit > :nth-child(3) { animation-delay: .08s; }
-.view.enter > :nth-child(4), .view.enter #keysEdit > :nth-child(4) { animation-delay: .12s; }
-.view.enter > :nth-child(5), .view.enter #keysEdit > :nth-child(5) { animation-delay: .16s; }
-.view.enter > :nth-child(n+6), .view.enter #keysEdit > :nth-child(n+6) { animation-delay: .2s; }
+.pop-body.enter > *, .pop-body.enter #keysEdit > * { animation: rise .5s var(--out) both; }
+.pop-body.enter > :nth-child(2), .pop-body.enter #keysEdit > :nth-child(2) { animation-delay: .04s; }
+.pop-body.enter > :nth-child(3), .pop-body.enter #keysEdit > :nth-child(3) { animation-delay: .08s; }
+.pop-body.enter > :nth-child(4), .pop-body.enter #keysEdit > :nth-child(4) { animation-delay: .12s; }
+.pop-body.enter > :nth-child(5), .pop-body.enter #keysEdit > :nth-child(5) { animation-delay: .16s; }
+.pop-body.enter > :nth-child(n+6), .pop-body.enter #keysEdit > :nth-child(n+6) { animation-delay: .2s; }
 @keyframes rise { from { opacity: 0; transform: translateY(10px); filter: blur(4px); } }
 @keyframes view-in { from { opacity: 0; transform: translateY(4px); } }
 .lead, .edit-head p { margin: 3px 0 18px; color: var(--text-2); }
