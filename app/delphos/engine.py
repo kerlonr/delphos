@@ -12,7 +12,7 @@ import psutil
 from . import actions, audio, settings
 from . import protocol as p
 from .hidlink import HidLink
-from .media import media_only
+from .media import match_session, media_only
 from .media import Media
 from .mixer import Mixer, ordered
 
@@ -107,8 +107,11 @@ class Engine:
 
     def _refresh(self) -> None:
         apps = audio.app_channels()
-        running = {p.info["name"].lower() for p in psutil.process_iter(["name"]) if p.info["name"]}
-        apps += media_only(self.media.app_ids(), {c.key for c in apps}, running)
+        keys = {c.key for c in apps}
+        ids = [i for i in self.media.app_ids() if not any(match_session([i], k) == 0 for k in keys)]
+        if ids:  # só lista os processos se tem app com mídia e sem áudio
+            running = {p.info["name"].lower() for p in psutil.process_iter(["name"]) if p.info["name"]}
+            apps += media_only(ids, keys, running)
         hidden = self.prefs.get("hidden_apps", {})
         self.mixer.refresh(ordered(audio.MasterChannel(), [c for c in apps if c.key not in hidden]))
         self._mics.enforce()
@@ -159,7 +162,8 @@ class Engine:
         while not self._stop.is_set():
             try:
                 try:
-                    self._apply(self.events.get(timeout=0.05), time.monotonic())
+                    # tecla do Delphos ou pedido da interface acorda na hora; sem nada, checa 4x por segundo
+                    self._apply(self.events.get(timeout=0.25), time.monotonic())
                 except queue.Empty:
                     pass
                 now = time.monotonic()

@@ -17,7 +17,8 @@ def test_invalid_rejected():
 
 def test_describe():
     assert actions.describe({"type": "program", "target": r"C:\Apps\Discord\Discord.exe"}) == "Discord"
-    assert actions.describe({"type": "folder", "target": "D:\Projetos\\"}) == "Projetos"
+    assert actions.describe({"type": "program", "target": "spotify:"}) == "Spotify"
+    assert actions.describe({"type": "folder", "target": r"D:\Projetos" + "\\"}) == "Projetos"
     assert actions.describe({"type": "site", "target": "https://www.youtube.com/watch?v=1"}) == "www.youtube.com"
     assert actions.describe({"type": "mute_app", "target": "spotify.exe", "label": "Spotify"}) == "Spotify"
 

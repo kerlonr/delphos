@@ -22,6 +22,7 @@ class Api:
         self._engine = engine
         self._device = Keymap(engine.link)
         self._prefs = prefs
+        self.visible = True             # janela aberta (escondida = interface parada)
         self._window = None             # preenchidos pelo app.py
         self._quit = lambda: None
         self._flash_state = {"running": False, "message": "", "needs_boot": False}
@@ -34,7 +35,7 @@ class Api:
     def meta(self) -> dict:
         catalog = keycodes.catalog()
         return {"catalog": catalog, "labels": {i["code"]: i["label"] for c in catalog for i in c["items"]},
-                "action_types": actions.TYPES, "version": VERSION}
+                "action_types": actions.TYPES, "version": VERSION, "visible": self.visible}
 
     def state(self) -> dict:
         e = self._engine

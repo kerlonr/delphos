@@ -24,6 +24,8 @@ NO_TARGET = ("close_selected",)  # age no app selecionado no Delphos, sem alvo f
 def describe(action: dict) -> str:
     """Nome curto para mostrar na tecla, ex. "Discord" ou "youtube.com"."""
     target = action.get("target", "")
+    if action.get("type") == "program" and target.endswith(":"):  # link de app da Store, ex. "spotify:"
+        return target[:-1].capitalize()
     if action.get("type") in ("program", "folder"):
         return os.path.splitext(os.path.basename(target.rstrip("\\/")))[0] or target
     if action.get("type") == "site":

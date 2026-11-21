@@ -32,7 +32,6 @@ function paintOled() {
   for (let i = 0; i < fb.length; i++) img.data.set(fb[i] ? [191, 228, 255, 255] : [0, 0, 0, 255], i * 4);
   ctx.putImageData(img, 0, 0);
 }
-setInterval(paintOled, 45);
 
 // Teclas
 
@@ -52,6 +51,7 @@ function buildKeys() {
     const b = document.createElement("button");
     b.className = "key";
     b.dataset.slot = slot;
+    b.style.setProperty("--i", Number(slot[0]) + Number(slot[2])); // onda na diagonal na abertura
     b.addEventListener("click", () => select(slot));
     $("keys").appendChild(b);
   }
@@ -108,7 +108,7 @@ function renderEditor() {
 
   $("slots").hidden = !ENCODER_SLOTS.includes(selected);
   for (const b of $("slots").children) b.setAttribute("aria-pressed", String(b.dataset.slot === selected));
-  $("editTitle").textContent = (ENCODER_TITLES[selected] ?? "Tecla") + (layer ? ` · camada ${layer}` : "");
+  $("editTitle").textContent = (ENCODER_TITLES[selected] ?? "Tecla") + (layer ? `, camada ${layer}` : "");
   $("editCurrent").textContent = `Agora: ${labelOf(keyAt(selected))}`;
 
   $("chips").replaceChildren(...[...catalog.map((c) => c.name), ...EXTRA_CATEGORIES].map((name, i) => {
@@ -312,6 +312,7 @@ function buildChannel(app) {
   li.querySelector(".name").addEventListener("click", () => api.select(app.key));
   slider.addEventListener("input", () => {
     li.querySelector("output").textContent = slider.value;
+    slider.style.setProperty("--v", `${slider.value}%`);
     api.set_volume(app.key, Number(slider.value));
   });
   li.querySelector(".mute").addEventListener("click", () => api.toggle_mute(app.key));
@@ -339,6 +340,7 @@ function renderMixer() {
     slider.disabled = app.silent;
     if (document.activeElement !== slider) {
       slider.value = app.volume;
+      slider.style.setProperty("--v", `${app.volume}%`);
       li.querySelector("output").textContent = app.volume;
     }
   }
@@ -376,6 +378,8 @@ async function loadSettings() {
   const s = await api.settings();
   $("autostart").checked = s.autostart;
   $("step").value = s.step;
+  $("step").style.setProperty("--v", `${(s.step - 1) / 9 * 100}%`);
+  $("version").textContent = `Delphos ${s.version}`;
   $("stepOut").textContent = `${s.step}%`;
   $("installRow").hidden = !s.is_exe;
   if (s.running_installed) {
@@ -390,6 +394,7 @@ async function loadSettings() {
 }
 $("autostart").addEventListener("change", (e) => api.set_autostart(e.target.checked));
 $("step").addEventListener("input", (e) => {
+  e.target.style.setProperty("--v", `${(e.target.value - 1) / 9 * 100}%`);
   $("stepOut").textContent = `${e.target.value}%`;
   api.set_step(Number(e.target.value));
 });
@@ -422,7 +427,7 @@ function renderFirmware() {
   const flash = st.flash, fw = st.firmware;
   const outdated = fw && fw.installed !== fw.bundled;
   $("fwInfo").textContent = !fw ? "Conecte o Delphos para ver a versão."
-    : outdated ? `Instalado: ${fw.installed ?? "antigo"} · disponível: ${fw.bundled}`
+    : outdated ? `Instalada a versão ${fw.installed ?? "antiga"}. Disponível: ${fw.bundled}.`
     : `Versão ${fw.installed}, atualizado.`;
   $("flash").disabled = flash.running;
   $("outdated").hidden = !outdated || flash.running;
@@ -433,9 +438,25 @@ function renderFirmware() {
 
 // Geral
 
+let currentView = "keys";
+
+function moveThumb() {
+  const tab = document.querySelector(`.tabs [data-view="${currentView}"]`);
+  $("tabThumb").style.width = `${tab.offsetWidth}px`;
+  $("tabThumb").style.transform = `translateX(${tab.offsetLeft}px)`;
+}
+
 function showView(view) {
   for (const t of document.querySelectorAll("[data-view]")) t.setAttribute("aria-selected", String(t.dataset.view === view));
   for (const id of ["keys", "mixer", "settings"]) $(`view-${id}`).hidden = id !== view;
+  if (view !== currentView) {
+    const el = $(`view-${view}`);
+    el.classList.remove("enter");
+    void el.offsetWidth; // reinicia a animação
+    el.classList.add("enter");
+  }
+  currentView = view;
+  moveThumb();
 }
 for (const t of document.querySelectorAll("[data-view]")) t.addEventListener("click", () => showView(t.dataset.view));
 $("micPill").addEventListener("click", () => api.toggle_mic());
@@ -483,13 +504,69 @@ async function tick() {
   renderFirmware();
 }
 
+// Com a janela escondida nada roda: sem timers, sem desenho, sem chamadas ao Python.
+
+let timers = [];
+
+function wake() {
+  if (timers.length) return;
+  timers = [setInterval(paintOled, 45), setInterval(tick, 250)];
+  tick();
+}
+
+function sleep() {
+  timers.forEach(clearInterval);
+  timers = [];
+}
+
+let introTimer = 0;
+
+function playIntro() {
+  const body = document.body;
+  clearTimeout(introTimer);
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    body.classList.remove("booting", "intro-run");
+    return;
+  }
+  body.classList.add("booting");
+  body.classList.remove("intro-run");
+  void body.offsetWidth;
+  body.classList.add("intro-run");
+  introTimer = setTimeout(() => body.classList.remove("booting", "intro-run"), 2000);
+}
+document.addEventListener("pointerdown", () => {
+  if (document.body.classList.contains("intro-run")) {  // clique pula a abertura
+    clearTimeout(introTimer);
+    document.body.classList.remove("booting", "intro-run");
+  }
+});
+
+// Chamados pelo app.py ao esconder e ao abrir a janela.
+window.delphosHidden = () => {
+  sleep();
+  document.body.classList.add("booting"); // ao reabrir, a tela já começa limpa para a abertura
+};
+window.delphosShown = () => {
+  loadSettings();
+  playIntro();
+  wake();
+};
+
+window.addEventListener("resize", moveThumb);
+
 window.addEventListener("pywebviewready", async () => {
   api = window.pywebview.api;
-  ({ catalog, labels, action_types: actionTypes } = await api.meta());
+  const meta = await api.meta();
+  ({ catalog, labels, action_types: actionTypes } = meta);
   buildKeys();
   renderKeys();
   renderEditor();
+  moveThumb();
   await loadSettings();
-  await tick();
-  setInterval(tick, 250);
+  if (meta.visible) {
+    playIntro();
+    wake();
+  } else {
+    document.body.classList.remove("booting"); // abre escondido: a abertura fica para quando a janela aparecer
+  }
 });

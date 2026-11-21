@@ -104,6 +104,7 @@ class Mics:
         self._saved = saved_volumes  # id do microfone -> volume antes de mutar
         self._save = save
         self._known: set[str] = set()
+        self._cache: dict[str, tuple[str, object]] = {}  # id -> (nome, volume): ler o nome custa ~20 ms
 
     def _devices(self) -> list[tuple[str, str, object]]:
         """(id, nome, volume do microfone)"""
@@ -111,8 +112,13 @@ class Mics:
         out = []
         for i in range(devices.GetCount()):
             dev = devices.Item(i)
-            name = AudioUtilities.CreateDevice(dev).FriendlyName or "Microfone"
-            out.append((dev.GetId(), name, _endpoint_volume(dev)))
+            dev_id = dev.GetId()
+            if dev_id not in self._cache:
+                self._cache[dev_id] = (AudioUtilities.CreateDevice(dev).FriendlyName or "Microfone", _endpoint_volume(dev))
+            out.append((dev_id, *self._cache[dev_id]))
+        # microfone desplugado sai do cache: ao voltar, pega um controle novo (o antigo fica inválido)
+        for dev_id in self._cache.keys() - {d for d, _, _ in out}:
+            del self._cache[dev_id]
         return out
 
     def _mute(self, dev_id: str, ep) -> None:

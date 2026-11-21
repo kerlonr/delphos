@@ -1,4 +1,5 @@
 """Janela (pywebview) + ícone na bandeja. Fechar a janela só esconde; "Sair" fecha de verdade."""
+import ctypes
 import logging
 import os
 import sys
@@ -45,6 +46,34 @@ def tray_icon(status_color: str | None) -> Image.Image:
     return img
 
 
+BG = "#191C21"
+
+
+def dark_title_bar(hwnd: int) -> None:
+    """Barra de título do Windows 11 na cor do app (escura, sem a faixa branca)."""
+    color = int(BG[5:7] + BG[3:5] + BG[1:3], 16)  # COLORREF é 0x00BBGGRR
+    for attr, value in ((20, 1), (35, color)):    # DWMWA_USE_IMMERSIVE_DARK_MODE, DWMWA_CAPTION_COLOR
+        ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, attr, ctypes.byref(ctypes.c_int(value)), 4)
+
+
+def webview_low_power(window, on: bool) -> None:
+    """Janela escondida: suspende a página e pede ao WebView2 para soltar memória. Ao mostrar, volta sozinho."""
+    try:
+        from System import Action
+        from Microsoft.Web.WebView2.Core import CoreWebView2MemoryUsageTargetLevel as Level
+        form = window.native
+
+        def run():
+            core = form.webview.CoreWebView2
+            core.MemoryUsageTargetLevel = Level.Low if on else Level.Normal
+            if on:
+                core.TrySuspendAsync()
+
+        form.Invoke(Action(run))
+    except Exception:
+        log.exception("webview_low_power(%s)", on)
+
+
 def main() -> int:
     setup_logging()
     if "--uninstall" in sys.argv:
@@ -62,19 +91,39 @@ def main() -> int:
     api = Api(engine, prefs)
 
     window = webview.create_window("Delphos", resource("delphos", "ui", "index.html"), js_api=api,
-                                   width=1080, height=660, min_size=(900, 560),
-                                   background_color="#191C21", hidden="--hidden" in sys.argv)
+                                   width=900, height=560, min_size=(900, 560),
+                                   background_color=BG, hidden="--hidden" in sys.argv)
+    api.visible = "--hidden" not in sys.argv
     quitting = threading.Event()
 
     def on_closing():
         if quitting.is_set():
             return True
-        window.hide()
+        threading.Thread(target=hide, daemon=True).start()  # fora do evento: evaluate_js espera a página
         return False
 
+    def hide():
+        api.visible = False
+        window.evaluate_js("delphosHidden()")
+        window.hide()
+        webview_low_power(window, True)
+
     def show(*_):
+        first = not api.visible
+        api.visible = True
+        webview_low_power(window, False)
         window.show()
         window.restore()
+        if first:
+            window.evaluate_js("delphosShown()")
+
+    def on_loaded():
+        try:
+            dark_title_bar(int(window.native.Handle.ToInt64()))
+        except Exception:
+            log.exception("barra de título")
+        if not api.visible:
+            webview_low_power(window, True)
 
     def quit_app(*_):
         quitting.set()
@@ -94,6 +143,7 @@ def main() -> int:
 
     api._window, api._quit = window, quit_app
     window.events.closing += on_closing
+    window.events.loaded += on_loaded
     icon = pystray.Icon("Delphos", icons["off"], "Delphos", menu=pystray.Menu(
         pystray.MenuItem("Abrir Delphos", show, default=True),
         pystray.MenuItem("Sair", quit_app),
