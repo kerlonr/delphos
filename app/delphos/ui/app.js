@@ -17,8 +17,17 @@ let knobSeq = null, knobAngle = 0;
 // Tela (o desenho fica em oled.js)
 
 let popupUntil = 0, lastVolume = null, lastItem = null, scroll = 0;
-const ctx = $("oled").getContext("2d");
-const img = ctx.createImageData(W, H);
+const oled = $("oled");
+const ctx = oled.getContext("2d");
+
+// O desenho da tela é mais alto que 4:1 (como o painel real): desenha na resolução do monitor
+// para os pixels do OLED ficarem nítidos em qualquer escala.
+function fitOled() {
+  const dpr = devicePixelRatio || 1;
+  oled.width = Math.round(oled.offsetWidth * dpr);
+  oled.height = Math.round(oled.offsetHeight * dpr);
+}
+window.addEventListener("resize", fitOled);
 
 function paintOled() {
   if (!st || !st.connected || !st.screen) {
@@ -29,8 +38,19 @@ function paintOled() {
     scroll = st.media.status && width > W - MEDIA_X ? (scroll + 1) % (width + 18) : 0;
     renderScreen(st.screen, st.media, performance.now() < popupUntil, scroll);
   }
-  for (let i = 0; i < fb.length; i++) img.data.set(fb[i] ? [191, 228, 255, 255] : [0, 0, 0, 255], i * 4);
-  ctx.putImageData(img, 0, 0);
+  if (!oled.width || oled.width !== Math.round(oled.offsetWidth * (devicePixelRatio || 1))) fitOled();
+  const sx = oled.width / W, sy = oled.height / H;
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, oled.width, oled.height);
+  ctx.fillStyle = "rgb(191, 228, 255)";
+  for (let y = 0; y < H; y++) {
+    const top = Math.round(y * sy), h = Math.round((y + 1) * sy) - top;
+    for (let x = 0; x < W; x++) {
+      if (!fb[y * W + x]) continue;
+      const left = Math.round(x * sx);
+      ctx.fillRect(left, top, Math.round((x + 1) * sx) - left, h);
+    }
+  }
 }
 
 // Teclas
@@ -481,7 +501,7 @@ function renderDevice() {
 
   $("micPill").classList.toggle("muted", st.mic_muted);
   $("micText").textContent = st.mic_muted ? "Microfone mudo" : "Microfone ativo";
-  $("conn").textContent = st.connected ? "Delphos conectado" : "Delphos desconectado. Confira o cabo USB.";
+  $("conn").title = st.connected ? "Delphos conectado" : "Delphos desconectado. Confira o cabo USB.";
   $("conn").classList.toggle("ok", st.connected);
 }
 
@@ -553,6 +573,13 @@ window.delphosShown = () => {
 };
 
 window.addEventListener("resize", moveThumb);
+
+// Reflexo que segue o mouse no corpo do Delphos (só reage ao mouse, parado não gasta nada).
+$("device").addEventListener("pointermove", (e) => {
+  const r = $("device").getBoundingClientRect();
+  $("device").style.setProperty("--mx", `${e.clientX - r.left}px`);
+  $("device").style.setProperty("--my", `${e.clientY - r.top}px`);
+});
 
 window.addEventListener("pywebviewready", async () => {
   api = window.pywebview.api;

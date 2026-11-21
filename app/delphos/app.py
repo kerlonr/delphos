@@ -18,6 +18,7 @@ from .api import Api
 from .engine import Engine
 
 log = logging.getLogger("Delphos")
+BG = "#07060A"  # fundo do app (também a barra de título)
 
 
 def setup_logging() -> None:
@@ -39,14 +40,11 @@ def tray_icon(status_color: str | None) -> Image.Image:
     img = Image.open(resource("assets", "delphos.png")).convert("RGBA").resize((64, 64), Image.LANCZOS)
     if status_color:
         draw = ImageDraw.Draw(img)
-        draw.ellipse((40, 40, 63, 63), fill="#191C21")
+        draw.ellipse((40, 40, 63, 63), fill=BG)
         draw.ellipse((44, 44, 59, 59), fill=status_color)
     else:
         img.putalpha(img.getchannel("A").point(lambda a: a * 55 // 100))
     return img
-
-
-BG = "#191C21"
 
 
 def dark_title_bar(hwnd: int) -> None:

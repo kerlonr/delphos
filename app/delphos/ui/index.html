@@ -10,7 +10,7 @@
 <div class="intro" id="intro" aria-hidden="true"><img src="logo.png" alt=""></div>
 
 <header class="bar">
-  <h1 class="brand"><img src="logo.png" alt="">Delphos</h1>
+  <div class="brand"><img src="logo.png" alt=""><h1>Delphos</h1><span class="conn" id="conn" title="Procurando o Delphos…"></span></div>
   <nav class="tabs" role="tablist">
     <span class="thumb" id="tabThumb"></span>
     <button role="tab" data-view="keys" aria-selected="true">Teclas</button>
@@ -32,11 +32,11 @@
       <button data-layer="3">3</button>
     </nav>
     <div class="device" id="device">
+      <span class="sheen" aria-hidden="true"></span>
       <div class="oled-bezel"><canvas id="oled" width="128" height="32" aria-label="Espelho da tela do Delphos"></canvas></div>
       <button class="knob" id="knob" aria-label="Encoder"><span class="knob-cap"></span></button>
       <div class="keys" id="keys"></div>
     </div>
-    <p class="conn" id="conn">Procurando o Delphos…</p>
     <div class="outdated" id="outdated" hidden>
       <p>Tem firmware novo para o Delphos.</p>
       <button class="primary" id="outdatedFlash">Atualizar firmware</button>
