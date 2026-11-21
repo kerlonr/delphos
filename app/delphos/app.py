@@ -4,12 +4,14 @@ import logging
 import os
 import sys
 import threading
+import time
 from logging.handlers import RotatingFileHandler
 
 import pystray
 import webview
 import win32api
 import win32event
+import win32gui
 import winerror
 from PIL import Image, ImageDraw
 
@@ -54,6 +56,51 @@ def dark_title_bar(hwnd: int) -> None:
         ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, attr, ctypes.byref(ctypes.c_int(value)), 4)
 
 
+COMPACT_W = 440   # largura da janela compacta (px lógicos, com a borda)
+EDITOR_W = 360    # largura do painel da tecla
+
+
+class EditorWidth:
+    """Alarga a janela para a direita para o painel da tecla (o Delphos continua visível e clicável)
+    e volta ao tamanho de antes ao fechar. Usa a API do Windows em pixels físicos (escala de tela)."""
+
+    def __init__(self, window) -> None:
+        self.window = window
+        self.grown = 0  # quanto alargou, em pixels físicos
+
+    def set(self, open_: bool) -> bool:
+        """Devolve True se a janela mudou de tamanho."""
+        hwnd = int(self.window.native.Handle.ToInt64())
+        if ctypes.windll.user32.IsZoomed(hwnd):
+            return False
+        scale = ctypes.windll.user32.GetDpiForWindow(hwnd) / 96
+        left, top, right, bottom = win32gui.GetWindowRect(hwnd)
+        w, h = right - left, bottom - top
+        if open_ and not self.grown:
+            if w >= round((COMPACT_W + EDITOR_W - 20) * scale):
+                return False  # já está larga (o usuário esticou): o painel cabe sem crescer
+            delta = round(EDITOR_W * scale)
+            work = win32api.GetMonitorInfo(win32api.MonitorFromWindow(hwnd))["Work"]
+            new_left = max(work[0], min(left, work[2] - (w + delta)))  # não passa da borda direita da tela
+            self.grown = delta
+            self._animate(hwnd, left, top, w, h, new_left, w + delta)
+            return True
+        if not open_ and self.grown:
+            delta, self.grown = self.grown, 0
+            self._animate(hwnd, left, top, w, h, left, w - delta)
+            return True
+        return False
+
+    @staticmethod
+    def _animate(hwnd, x0, y, w0, h, x1, w1, steps=10, duration=0.18) -> None:
+        flags = 0x0004 | 0x0010  # SWP_NOZORDER | SWP_NOACTIVATE
+        for i in range(1, steps + 1):
+            k = 1 - (1 - i / steps) ** 3  # desacelera no fim
+            ctypes.windll.user32.SetWindowPos(hwnd, None, round(x0 + (x1 - x0) * k), y,
+                                              round(w0 + (w1 - w0) * k), h, flags)
+            time.sleep(duration / steps)
+
+
 def webview_low_power(window, on: bool) -> None:
     """Janela escondida: suspende a página e pede ao WebView2 para soltar memória. Ao mostrar, volta sozinho."""
     try:
@@ -89,7 +136,7 @@ def main() -> int:
     api = Api(engine, prefs)
 
     window = webview.create_window("Delphos", resource("delphos", "ui", "index.html"), js_api=api,
-                                   width=440, height=640, min_size=(420, 600),
+                                   width=COMPACT_W, height=640, min_size=(420, 600),
                                    background_color=BG, hidden="--hidden" in sys.argv)
     api.visible = "--hidden" not in sys.argv
     quitting = threading.Event()
@@ -140,6 +187,7 @@ def main() -> int:
             icon.icon, icon.title = icons["on"], "Delphos: microfone ativo"
 
     api._window, api._quit = window, quit_app
+    api._editor_width = EditorWidth(window)
     window.events.closing += on_closing
     window.events.loaded += on_loaded
     icon = pystray.Icon("Delphos", icons["off"], "Delphos", menu=pystray.Menu(

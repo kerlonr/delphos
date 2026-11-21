@@ -98,7 +98,7 @@ body.drawer-open .burger span:nth-child(3) { transform: translateY(-4.25px) rota
 /* painel por cima: o Delphos recua ao fundo, como um modal */
 body.sheet-open .device-wrap { transform: scale(.9); opacity: .25; filter: blur(5px); }
 .tip { color: var(--text-3); font-size: 12px; transition: opacity .3s, transform .4s var(--out); }
-body.pop-open .tip { opacity: 0; transform: translateY(4px); }
+body.edit-open .tip { opacity: 0; transform: translateY(4px); }
 /* aurora: luz roxa e azul bem lenta atrás do Delphos (só com a janela aberta) */
 .device-wrap::before, .device-wrap::after {
   content: ""; position: absolute; z-index: -1; pointer-events: none; border-radius: 50%; filter: blur(40px);
@@ -238,31 +238,25 @@ body.drawer-open .drawer button, body.drawer-open .drawer .version {
 body.sheet-open .panel { transform: none; visibility: visible; transition: transform .7s var(--pop), visibility 0s; }
 .close { position: absolute; top: 14px; right: 14px; z-index: 1; }
 
-/* Balão da tecla: sai da tecla, com setinha apontando para ela */
-.popover {
-  --ax: 50%;                      /* posição da setinha (e origem da animação) */
-  position: absolute; z-index: 6; width: min(400px, calc(100% - 24px)); left: 12px; top: 12px;
+/* Painel da tecla: a janela alarga para a direita e o painel desliza para dentro.
+   O Delphos fica onde estava (largura travada em --left-w), sempre clicável. */
+body.edit-open .device-wrap { right: auto; width: var(--left-w); }
+.keypanel {
+  position: absolute; top: 0; bottom: 0; left: var(--left-w, 100%); width: 360px; z-index: 4;
   display: flex; flex-direction: column;
-  background: rgba(16, 15, 21, .96); backdrop-filter: blur(20px);
-  border-radius: 16px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.09), 0 24px 60px -12px #000, 0 0 40px -10px var(--violet-glow);
-  transform-origin: var(--ax) 0; transform: scale(.4); opacity: 0; filter: blur(6px); visibility: hidden;
+  background: linear-gradient(180deg, rgba(157, 140, 255, .045), transparent 180px), #0B0A0F;
+  box-shadow: inset 1px 0 0 var(--hair), -30px 0 60px -30px #000;
+  transform: translateX(40px); opacity: 0; filter: blur(6px); visibility: hidden;
   transition: transform .3s var(--ease), opacity .2s, filter .25s, visibility 0s .3s;
 }
-.popover.up { transform-origin: var(--ax) 100%; }
-body.pop-open .popover {
+body.edit-open .keypanel {
   transform: none; opacity: 1; filter: none; visibility: visible;
-  transition: transform .55s var(--pop), opacity .25s, filter .35s, visibility 0s, top .45s var(--out), left .45s var(--out), max-height .45s var(--out);
+  transition: transform .7s var(--pop) .08s, opacity .35s .08s, filter .45s .08s, visibility 0s;
 }
-.popover .arrow {
-  position: absolute; z-index: 2; left: var(--ax); top: -6px; width: 12px; height: 12px; margin-left: -6px;
-  background: rgb(16, 15, 21); transform: rotate(45deg); border-radius: 2px;
-  box-shadow: inset 1px 1px 0 rgba(255,255,255,.09); transition: left .45s var(--out);
-}
-.popover.up .arrow { top: auto; bottom: -6px; box-shadow: inset -1px -1px 0 rgba(255,255,255,.09); }
-.pop-body { position: relative; overflow-y: auto; padding: 16px 16px 18px; }
-.popover .close { top: 10px; right: 10px; }
-.popover .edit-head h2 { font-size: 15px; padding-right: 30px; }
-.popover .edit-head p { margin-bottom: 12px; }
+.keypanel .pop-body { position: relative; flex: 1; overflow-y: auto; padding: 20px 20px 24px; }
+.keypanel .close { top: 14px; right: 14px; }
+.keypanel .edit-head h2 { padding-right: 30px; }
+.keypanel .edit-head p { margin-bottom: 14px; }
 .close svg { transition: transform .35s var(--spring); }
 .close:hover svg { transform: rotate(90deg); }
 /* conteúdo entra em cascata, desfocado para nítido */

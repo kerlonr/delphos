@@ -25,6 +25,7 @@ class Api:
         self.visible = True             # janela aberta (escondida = interface parada)
         self._window = None             # preenchidos pelo app.py
         self._quit = lambda: None
+        self._editor_width = None
         self._flash_state = {"running": False, "message": "", "needs_boot": False}
         self._fw_installed: int | None = None
         self._fw_checked = False
@@ -206,6 +207,10 @@ class Api:
 
     def test_screen(self) -> None:
         self._engine.link.send(p.command(p.TEST))
+
+    def editor_width(self, open_: bool) -> bool:
+        """Alarga (ou volta) a janela para o painel da tecla."""
+        return bool(self._editor_width and self._editor_width.set(bool(open_)))
 
     def open_log(self) -> None:
         os.startfile(settings.DATA_DIR)

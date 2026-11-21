@@ -110,10 +110,14 @@ function select(slot) {
   // Abre direto no editor do tipo da tecla (macro, ação) para editar o que já existe.
   if (macroIndex(code) !== null) category = catalog.length;
   else if (actionIndex(code) !== null) category = catalog.length + 1;
+  else {  // abre na categoria da tecla (ex. Play/Pause em Mídia)
+    const i = catalog.findIndex((c) => c.items.some((item) => item.code === code));
+    if (i >= 0) category = i;
+  }
   if (body.classList.contains("sheet-open")) closeSheet();
   renderKeys();
   renderEditor();
-  openPopover();
+  openKeyPanel();
 }
 
 function showEditor(id) {
@@ -140,7 +144,6 @@ function renderEditor() {
     return b;
   }));
 
-  requestAnimationFrame(placePopover);
   const extra = EXTRA_CATEGORIES[category - catalog.length];
   if (extra === "Macro") return openMacro();
   if (extra === "Ação no PC") return openAction();
@@ -182,7 +185,7 @@ function openCapture() {
 }
 
 document.addEventListener("keydown", async (e) => {
-  if (!captureMode || !body.classList.contains("pop-open")) return;
+  if (!captureMode || !body.classList.contains("edit-open")) return;
   if (["Control", "Shift", "Alt", "Meta"].includes(e.key)) return;
   if (document.activeElement?.tagName === "INPUT") return;
   e.preventDefault();
@@ -486,7 +489,7 @@ function restartEnter(el) {
 
 function showView(view) {
   if (view === "home") return closeSheet();
-  closePopover();
+  closeKeyPanel();
   for (const id of ["mixer", "settings"]) $(`view-${id}`).hidden = id !== view;
   if (view !== currentView || !body.classList.contains("sheet-open")) {
     restartEnter($(`view-${view}`));
@@ -501,46 +504,41 @@ function closeSheet() {
   markNav("home");
 }
 
-// Balão: abre embaixo da tecla se couber, senão em cima; a setinha aponta para a tecla.
-function placePopover() {
-  if (!selected) return;
-  const pop = $("popover"), stage = pop.parentElement.getBoundingClientRect();
-  const anchor = ENCODER_SLOTS.includes(selected) ? $("knob") : document.querySelector(`.key[data-slot="${selected}"]`);
-  const a = anchor.getBoundingClientRect();
-  const w = pop.offsetWidth, gap = 12, margin = 10;
-  const cx = a.left + a.width / 2 - stage.left;
-  const left = Math.min(Math.max(cx - w / 2, margin), stage.width - w - margin);
-  const below = stage.bottom - a.bottom, above = a.top - stage.top;
-  const up = below < 300 && above > below;
-  pop.classList.toggle("up", up);
-  pop.style.left = `${left}px`;
-  pop.style.setProperty("--ax", `${Math.min(Math.max(cx - left, 22), w - 22)}px`);
-  if (up) {
-    const maxH = above - gap - margin;
-    pop.style.maxHeight = `${maxH}px`;
-    pop.style.top = `${a.top - stage.top - gap - Math.min(pop.scrollHeight, maxH)}px`;
-  } else {
-    pop.style.maxHeight = `${below - gap - margin}px`;
-    pop.style.top = `${a.bottom - stage.top + gap}px`;
+// Painel da tecla: a janela alarga para a direita (o Delphos não sai do lugar) e o painel desliza.
+const KEY_PANEL_W = 360;
+
+async function openKeyPanel() {
+  restartEnter($("view-keys"));
+  $("view-keys").scrollTop = 0;
+  if (body.classList.contains("edit-open")) return;
+  // janela compacta: alarga e o Delphos fica com a largura de agora; já larga: divide o espaço
+  const grow = innerWidth < 424 + KEY_PANEL_W - 10;
+  body.style.setProperty("--left-w", `${grow ? innerWidth : innerWidth - KEY_PANEL_W}px`);
+  body.classList.add("edit-open");
+  if (grow) {
+    resizing = true;
+    await api.editor_width(true);
+    resizing = false;
   }
 }
 
-function openPopover() {
-  const wasOpen = body.classList.contains("pop-open");
-  placePopover();
-  restartEnter($("view-keys"));
-  $("view-keys").scrollTop = 0;
-  if (!wasOpen) body.classList.add("pop-open");
-  requestAnimationFrame(placePopover); // o conteúdo novo pode mudar a altura
-}
-
-function closePopover() {
-  if (!body.classList.contains("pop-open")) return;
-  body.classList.remove("pop-open");
+async function closeKeyPanel() {
+  if (!body.classList.contains("edit-open")) return;
   captureMode = null;
   selected = null;
   renderKeys();
+  body.classList.remove("edit-open");
+  resizing = true;
+  await new Promise((r) => setTimeout(r, 220)); // painel sai antes da janela encolher
+  if (!body.classList.contains("edit-open")) await api.editor_width(false);
+  resizing = false;
 }
+
+let resizing = false;
+window.addEventListener("resize", () => {
+  // o usuário mudou o tamanho com o painel aberto: o Delphos fica com o que sobra
+  if (!resizing && body.classList.contains("edit-open")) body.style.setProperty("--left-w", `${Math.max(innerWidth - KEY_PANEL_W, 300)}px`);
+});
 
 function setDrawer(open) {
   body.classList.toggle("drawer-open", open);
@@ -557,18 +555,15 @@ for (const t of document.querySelectorAll(".drawer [data-view]")) {
 $("burger").addEventListener("click", () => setDrawer(!body.classList.contains("drawer-open")));
 $("scrim").addEventListener("click", () => setDrawer(false));
 $("sheetClose").addEventListener("click", closeSheet);
-$("popClose").addEventListener("click", closePopover);
-// clique fora do balão (e fora das teclas) fecha
-document.addEventListener("pointerdown", (e) => {
-  if (!body.classList.contains("pop-open")) return;
-  if (e.target.closest("#popover, .key, #knob, .layers, select")) return;
-  closePopover();
+$("keyClose").addEventListener("click", closeKeyPanel);
+// clique no fundo vazio (fora do Delphos) fecha o painel da tecla
+$("keyPanel").parentElement.querySelector(".device-wrap").addEventListener("click", (e) => {
+  if (e.target === e.currentTarget) closeKeyPanel();
 });
-window.addEventListener("resize", placePopover);
 document.addEventListener("keydown", (e) => {
   if (e.key !== "Escape" || captureMode) return;
   if (body.classList.contains("drawer-open")) setDrawer(false);
-  else if (body.classList.contains("pop-open")) closePopover();
+  else if (body.classList.contains("edit-open")) closeKeyPanel();
   else if (body.classList.contains("sheet-open")) closeSheet();
 });
 
