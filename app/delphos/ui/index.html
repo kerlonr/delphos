@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Delphos</title>
+<link rel="icon" href="logo.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="bar">
+  <h1 class="brand"><img src="logo.png" alt="">Delphos</h1>
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-view="keys" aria-selected="true">Teclas</button>
+    <button role="tab" data-view="mixer">Mixer</button>
+    <button role="tab" data-view="settings">Ajustes</button>
+  </nav>
+  <button class="mic-pill" id="micPill" title="Mutar/desmutar todos os microfones">
+    <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5a2.5 2.5 0 0 0-2.5 2.5v4a2.5 2.5 0 0 0 5 0V4A2.5 2.5 0 0 0 8 1.5Z"/><path d="M3.5 7.5a4.5 4.5 0 0 0 9 0M8 12v2.5" fill="none"/><path class="slash" d="M2.5 2.5l11 11" fill="none"/></svg>
+    <span id="micText">Microfone</span>
+  </button>
+</header>
+
+<main class="stage">
+  <section class="device-wrap" aria-label="Delphos">
+    <nav class="layers" id="layers" aria-label="Camadas">
+      <button data-layer="0" aria-pressed="true">Camada 0</button>
+      <button data-layer="1">1</button>
+      <button data-layer="2">2</button>
+      <button data-layer="3">3</button>
+    </nav>
+    <div class="device">
+      <div class="oled-bezel"><canvas id="oled" width="128" height="32" aria-label="Espelho da tela do Delphos"></canvas></div>
+      <button class="knob" id="knob" aria-label="Encoder"><span class="knob-cap"></span></button>
+      <div class="keys" id="keys"></div>
+    </div>
+    <p class="conn" id="conn">Procurando o Delphos…</p>
+    <div class="outdated" id="outdated" hidden>
+      <p>A tela do Delphos ainda é a do firmware antigo. O desenho acima mostra a versão nova.</p>
+      <button class="primary" id="outdatedFlash">Atualizar firmware</button>
+    </div>
+  </section>
+
+  <section class="panel" id="view-keys">
+    <div id="keysEmpty" class="empty">
+      <h2>Toque numa tecla</h2>
+      <p>Escolha uma tecla ou o encoder no desenho para trocar o que ela faz. A mudança vale na hora, sem gravar firmware.
+        As camadas 1 a 3 são usadas por teclas de camada (veja "Camadas").</p>
+      <button class="ghost" id="resetKeys">Restaurar teclas padrão</button>
+    </div>
+    <div id="keysEdit" hidden>
+      <div class="edit-head">
+        <h2 id="editTitle">Tecla</h2>
+        <p id="editCurrent"></p>
+      </div>
+      <div class="slots" id="slots" hidden>
+        <button data-slot="ccw">Girar ←</button>
+        <button data-slot="cw">Girar →</button>
+        <button data-slot="0,4">Clique</button>
+      </div>
+      <div class="chips" id="chips"></div>
+      <div class="items" id="items"></div>
+      <div class="editor" id="capture" hidden>
+        <p>Aperte o atalho no teclado do PC</p>
+        <kbd id="captureView">…</kbd>
+        <div class="row"><button class="primary" id="captureSave" disabled>Usar atalho</button></div>
+      </div>
+
+      <div class="editor" id="macroEditor" hidden>
+        <p>A tecla faz estes passos em ordem. O texto é digitado como num teclado americano (sem acentos).</p>
+        <ol class="steps" id="macroSteps"></ol>
+        <input id="macroText" placeholder="Texto para digitar">
+        <div class="row wrap">
+          <button class="ghost" id="addText">+ Texto</button>
+          <button class="ghost" id="addKey">+ Tecla ou atalho</button>
+          <button class="ghost" id="addDelay">+ Esperar 100 ms</button>
+        </div>
+        <p class="hint" id="macroKeyHint" hidden>Aperte a tecla ou o atalho no teclado do PC…</p>
+        <div class="row"><button class="primary" id="macroSave">Salvar macro</button><small id="macroSpace"></small></div>
+      </div>
+
+      <div class="editor" id="actionEditor" hidden>
+        <p>Com o app aberto, a tecla faz isto no PC.</p>
+        <select id="actionType"></select>
+        <div class="row wrap">
+          <input id="actionTarget" placeholder="">
+          <select id="actionApp" hidden></select>
+          <button class="ghost" id="actionPick">Escolher…</button>
+        </div>
+        <div class="row"><button class="primary" id="actionSave">Salvar ação</button></div>
+      </div>
+
+      <div class="editor" id="codeEditor" hidden>
+        <p>Código QMK em hexadecimal, para qualquer tecla que não está nas listas (como no VIA).</p>
+        <div class="row"><input id="codeInput" placeholder="0x0000"><button class="primary" id="codeSave">Usar código</button></div>
+      </div>
+      <p class="error" id="editError" hidden></p>
+    </div>
+  </section>
+
+  <section class="panel" id="view-mixer" hidden>
+    <h2>Mixer</h2>
+    <p>O encoder controla o item marcado. Clique no nome para escolher.</p>
+    <ul class="channels" id="channels"></ul>
+    <div class="now" id="now" hidden>
+      <div class="now-text"><span id="nowState"></span><strong id="nowTitle"></strong></div>
+      <div class="row transport">
+        <button class="icon" data-media="prev" aria-label="Faixa anterior"><svg viewBox="0 0 16 16"><path d="M4 3v10M13 3 6 8l7 5Z"/></svg></button>
+        <button class="icon" data-media="play" aria-label="Play/Pause"><svg viewBox="0 0 16 16"><path id="playIcon" d="M5 3v10l8-5Z"/></svg></button>
+        <button class="icon" data-media="next" aria-label="Próxima faixa"><svg viewBox="0 0 16 16"><path d="M12 3v10M3 3l7 5-7 5Z"/></svg></button>
+      </div>
+    </div>
+    <h3>Microfones</h3>
+    <ul class="mics" id="mics"></ul>
+  </section>
+
+  <section class="panel" id="view-settings" hidden>
+    <h2>Ajustes</h2>
+    <label class="setting">
+      <span><strong>Iniciar com o Windows</strong><small>Abre escondido na bandeja ao ligar o PC.</small></span>
+      <input type="checkbox" id="autostart" role="switch">
+    </label>
+    <label class="setting">
+      <span><strong>Passo do volume</strong><small>Quanto cada clique do encoder muda.</small></span>
+      <span class="step"><input type="range" id="step" min="1" max="10"><output id="stepOut"></output></span>
+    </label>
+    <div class="setting fw">
+      <span><strong>Firmware</strong><small id="fwInfo">—</small></span>
+      <button class="primary" id="flash">Atualizar firmware</button>
+    </div>
+    <p class="flash-msg" id="flashMsg" hidden></p>
+    <div class="setting">
+      <span><strong>Testar tela</strong><small>Desenha bordas e réguas por 10 s. Se a borda aparecer inteira, a tela está certa.</small></span>
+      <button class="ghost" id="testScreen">Testar tela</button>
+    </div>
+    <div class="setting" id="installRow" hidden>
+      <span><strong>Instalação</strong><small id="installInfo"></small></span>
+      <button class="primary" id="install">Instalar no PC</button>
+    </div>
+    <div class="setting">
+      <span><strong>Backup</strong><small>Teclas das 4 camadas, macros e ações num arquivo.</small></span>
+      <span class="row"><button class="ghost" id="exportBackup">Exportar</button><button class="ghost" id="importBackup">Importar</button></span>
+    </div>
+    <p class="flash-msg" id="backupMsg" hidden></p>
+    <div class="setting">
+      <span><strong>Registro</strong><small>Para investigar problemas.</small></span>
+      <button class="ghost" id="openLog">Abrir pasta do log</button>
+    </div>
+  </section>
+</main>
+
+<script src="font.js"></script>
+<script src="oled.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

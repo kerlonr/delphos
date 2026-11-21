@@ -5,7 +5,7 @@
     "bootloader": "caterina",
     "diode_direction": "COL2ROW",
     "features": {
-        "bootmagic": false,
+        "bootmagic": true,
         "command": false,
         "console": false,
         "extrakey": true,
@@ -17,7 +17,6 @@
         "cols": ["E6", "B4", "B5", "B6", "F5"]
     },
     "processor": "atmega32u4",
-    "url": "",
     "usb": {
         "device_version": "1.0.0",
         "pid": "0x0010",
