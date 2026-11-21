@@ -72,6 +72,7 @@ function buildKeys() {
     b.className = "key";
     b.dataset.slot = slot;
     b.style.setProperty("--i", Number(slot[0]) + Number(slot[2])); // onda na diagonal na abertura
+    b.appendChild(document.createElement("span")).className = "label"; // texto separado: a onda do clique não some
     b.addEventListener("click", () => select(slot));
     $("keys").appendChild(b);
   }
@@ -96,7 +97,7 @@ function renderKeys() {
     const code = keyAt(b.dataset.slot);
     // Em camadas 1-3, "Transparente" usa a tecla da camada de baixo: mostra apagada.
     b.classList.toggle("empty", code === 1 && layer > 0);
-    b.textContent = code == null || (code === 1 && layer > 0) ? "" : labelOf(code).replace(/([/+])/g, "$1​");
+    b.querySelector(".label").textContent = code == null || (code === 1 && layer > 0) ? "" : labelOf(code).replace(/([/+])/g, "$1​");
     b.classList.toggle("special", code >= 0x7E00 && code <= 0x7E15 || macroIndex(code) !== null);
     b.setAttribute("aria-pressed", String(b.dataset.slot === selected));
   }
@@ -109,9 +110,10 @@ function select(slot) {
   // Abre direto no editor do tipo da tecla (macro, ação) para editar o que já existe.
   if (macroIndex(code) !== null) category = catalog.length;
   else if (actionIndex(code) !== null) category = catalog.length + 1;
-  showView("keys");
+  if (body.classList.contains("sheet-open")) closeSheet();
   renderKeys();
   renderEditor();
+  openPopover();
 }
 
 function showEditor(id) {
@@ -138,6 +140,7 @@ function renderEditor() {
     return b;
   }));
 
+  requestAnimationFrame(placePopover);
   const extra = EXTRA_CATEGORIES[category - catalog.length];
   if (extra === "Macro") return openMacro();
   if (extra === "Ação no PC") return openAction();
@@ -179,7 +182,7 @@ function openCapture() {
 }
 
 document.addEventListener("keydown", async (e) => {
-  if (!captureMode || $("view-keys").hidden) return;
+  if (!captureMode || !body.classList.contains("pop-open")) return;
   if (["Control", "Shift", "Alt", "Meta"].includes(e.key)) return;
   if (document.activeElement?.tagName === "INPUT") return;
   e.preventDefault();
@@ -457,48 +460,86 @@ function renderFirmware() {
 
 // Geral
 
-// Navegação: o Delphos fica sempre na tela; teclas, mixer e ajustes abrem num painel à direita.
-// O menu (burger) entra pela esquerda.
+// Navegação: o Delphos fica sempre na tela. Tecla abre um balão preso a ela;
+// mixer e ajustes sobem num painel; o menu (burger) entra pela esquerda.
 
 let currentView = "home";
 const body = document.body;
 
-const navItem = (view) => (view === "keys" ? "home" : view); // editar tecla fica sob "Teclado"
-
 function moveDrawerThumb() {
-  const item = document.querySelector(`.drawer [data-view="${navItem(currentView)}"]`);
+  const item = document.querySelector(`.drawer [data-view="${currentView}"]`);
   $("drawerThumb").style.height = `${item.offsetHeight}px`;
   $("drawerThumb").style.transform = `translateY(${item.offsetTop}px)`;
 }
 
+function markNav(view) {
+  currentView = view;
+  for (const t of document.querySelectorAll(".drawer [data-view]")) t.setAttribute("aria-current", String(t.dataset.view === view));
+  moveDrawerThumb();
+}
+
+function restartEnter(el) {
+  el.classList.remove("enter");
+  void el.offsetWidth; // reinicia a animação
+  el.classList.add("enter");
+}
+
 function showView(view) {
-  for (const t of document.querySelectorAll(".drawer [data-view]")) t.setAttribute("aria-current", String(t.dataset.view === navItem(view)));
   if (view === "home") return closeSheet();
-  for (const id of ["keys", "mixer", "settings"]) $(`view-${id}`).hidden = id !== view;
+  closePopover();
+  for (const id of ["mixer", "settings"]) $(`view-${id}`).hidden = id !== view;
   if (view !== currentView || !body.classList.contains("sheet-open")) {
-    const el = $(`view-${view}`);
-    el.classList.remove("enter");
-    void el.offsetWidth; // reinicia a animação
-    el.classList.add("enter");
+    restartEnter($(`view-${view}`));
     $("sheet").scrollTop = 0;
   }
-  if (view !== "keys" && selected) {  // saiu da edição: tira a marca da tecla
-    selected = null;
-    renderKeys();
-  }
-  currentView = view;
   body.classList.add("sheet-open");
-  moveDrawerThumb();
+  markNav(view);
 }
 
 function closeSheet() {
   body.classList.remove("sheet-open");
-  currentView = "home";
+  markNav("home");
+}
+
+// Balão: abre embaixo da tecla se couber, senão em cima; a setinha aponta para a tecla.
+function placePopover() {
+  if (!selected) return;
+  const pop = $("popover"), stage = pop.parentElement.getBoundingClientRect();
+  const anchor = ENCODER_SLOTS.includes(selected) ? $("knob") : document.querySelector(`.key[data-slot="${selected}"]`);
+  const a = anchor.getBoundingClientRect();
+  const w = pop.offsetWidth, gap = 12, margin = 10;
+  const cx = a.left + a.width / 2 - stage.left;
+  const left = Math.min(Math.max(cx - w / 2, margin), stage.width - w - margin);
+  const below = stage.bottom - a.bottom, above = a.top - stage.top;
+  const up = below < 300 && above > below;
+  pop.classList.toggle("up", up);
+  pop.style.left = `${left}px`;
+  pop.style.setProperty("--ax", `${Math.min(Math.max(cx - left, 22), w - 22)}px`);
+  if (up) {
+    const maxH = above - gap - margin;
+    pop.style.maxHeight = `${maxH}px`;
+    pop.style.top = `${a.top - stage.top - gap - Math.min(pop.scrollHeight, maxH)}px`;
+  } else {
+    pop.style.maxHeight = `${below - gap - margin}px`;
+    pop.style.top = `${a.bottom - stage.top + gap}px`;
+  }
+}
+
+function openPopover() {
+  const wasOpen = body.classList.contains("pop-open");
+  placePopover();
+  restartEnter($("view-keys"));
+  $("view-keys").scrollTop = 0;
+  if (!wasOpen) body.classList.add("pop-open");
+  requestAnimationFrame(placePopover); // o conteúdo novo pode mudar a altura
+}
+
+function closePopover() {
+  if (!body.classList.contains("pop-open")) return;
+  body.classList.remove("pop-open");
   captureMode = null;
   selected = null;
   renderKeys();
-  for (const t of document.querySelectorAll(".drawer [data-view]")) t.setAttribute("aria-current", String(t.dataset.view === "home"));
-  moveDrawerThumb();
 }
 
 function setDrawer(open) {
@@ -510,18 +551,37 @@ function setDrawer(open) {
 for (const t of document.querySelectorAll(".drawer [data-view]")) {
   t.addEventListener("click", () => {
     showView(t.dataset.view);
-    setTimeout(() => setDrawer(false), 120); // deixa ver o indicador chegar antes de fechar
+    setTimeout(() => setDrawer(false), 140); // deixa ver o indicador chegar antes de fechar
   });
 }
 $("burger").addEventListener("click", () => setDrawer(!body.classList.contains("drawer-open")));
 $("scrim").addEventListener("click", () => setDrawer(false));
 $("sheetClose").addEventListener("click", closeSheet);
-// clique no fundo (fora do Delphos) fecha o painel
-$("sheet").previousElementSibling.addEventListener("click", (e) => { if (e.target === e.currentTarget) closeSheet(); });
+$("popClose").addEventListener("click", closePopover);
+// clique fora do balão (e fora das teclas) fecha
+document.addEventListener("pointerdown", (e) => {
+  if (!body.classList.contains("pop-open")) return;
+  if (e.target.closest("#popover, .key, #knob, .layers, select")) return;
+  closePopover();
+});
+window.addEventListener("resize", placePopover);
 document.addEventListener("keydown", (e) => {
   if (e.key !== "Escape" || captureMode) return;
   if (body.classList.contains("drawer-open")) setDrawer(false);
+  else if (body.classList.contains("pop-open")) closePopover();
   else if (body.classList.contains("sheet-open")) closeSheet();
+});
+
+// Onda de luz a partir do ponto clicado na tecla
+document.addEventListener("pointerdown", (e) => {
+  const key = e.target.closest(".key");
+  if (!key) return;
+  const r = key.getBoundingClientRect(), dot = document.createElement("span");
+  dot.className = "ripple";
+  dot.style.left = `${e.clientX - r.left}px`;
+  dot.style.top = `${e.clientY - r.top}px`;
+  key.appendChild(dot);
+  dot.addEventListener("animationend", () => dot.remove());
 });
 $("micPill").addEventListener("click", () => api.toggle_mic());
 
@@ -596,7 +656,7 @@ function playIntro() {
   body.classList.remove("intro-run");
   void body.offsetWidth;
   body.classList.add("intro-run");
-  introTimer = setTimeout(() => body.classList.remove("booting", "intro-run"), 2000);
+  introTimer = setTimeout(() => body.classList.remove("booting", "intro-run"), 2900);
 }
 document.addEventListener("pointerdown", () => {
   if (document.body.classList.contains("intro-run")) {  // clique pula a abertura

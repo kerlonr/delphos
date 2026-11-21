@@ -89,7 +89,7 @@ def main() -> int:
     api = Api(engine, prefs)
 
     window = webview.create_window("Delphos", resource("delphos", "ui", "index.html"), js_api=api,
-                                   width=900, height=560, min_size=(900, 560),
+                                   width=440, height=640, min_size=(420, 600),
                                    background_color=BG, hidden="--hidden" in sys.argv)
     api.visible = "--hidden" not in sys.argv
     quitting = threading.Event()

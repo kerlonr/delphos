@@ -54,9 +54,10 @@
     </div>
   </section>
 
-  <aside class="panel" id="sheet" aria-label="Opções">
-    <button class="icon close" id="sheetClose" aria-label="Fechar"><svg viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8" fill="none"/></svg></button>
-    <div class="view" id="view-keys">
+  <div class="popover" id="popover" role="dialog" aria-label="Configurar tecla">
+    <span class="arrow"></span>
+    <button class="icon close" id="popClose" aria-label="Fechar"><svg viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8" fill="none"/></svg></button>
+    <div class="pop-body" id="view-keys">
       <div id="keysEdit" hidden>
         <div class="edit-head">
           <h2 id="editTitle">Tecla</h2>
@@ -106,7 +107,10 @@
         <p class="error" id="editError" hidden></p>
       </div>
     </div>
+  </div>
 
+  <aside class="panel" id="sheet" aria-label="Opções">
+    <button class="icon close" id="sheetClose" aria-label="Fechar"><svg viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8" fill="none"/></svg></button>
     <div class="view" id="view-mixer" hidden>
       <h2>Mixer</h2>
       <p class="lead">O encoder controla o app marcado. Clique no nome para trocar.</p>
