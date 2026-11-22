@@ -12,59 +12,141 @@
   <div class="wordmark"><span style="--l: 0">D</span><span style="--l: 1">E</span><span style="--l: 2">L</span><span style="--l: 3">P</span><span style="--l: 4">H</span><span style="--l: 5">O</span><span style="--l: 6">S</span></div>
 </div>
 
-<header class="bar">
-  <button class="burger" id="burger" aria-label="Menu" aria-expanded="false" aria-controls="drawer"><span></span><span></span><span></span></button>
+<aside class="sidebar">
   <div class="brand"><img src="logo.png" alt=""><h1>Delphos</h1><span class="conn" id="conn" title="Procurando o Delphos…"></span></div>
-  <button class="mic-pill" id="micPill" title="Mutar/desmutar todos os microfones">
-    <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5a2.5 2.5 0 0 0-2.5 2.5v4a2.5 2.5 0 0 0 5 0V4A2.5 2.5 0 0 0 8 1.5Z"/><path d="M3.5 7.5a4.5 4.5 0 0 0 9 0M8 12v2.5" fill="none"/><path class="slash" d="M2.5 2.5l11 11" fill="none"/></svg>
-    <span id="micText">Microfone</span>
-  </button>
-</header>
+  <nav class="nav" id="nav" aria-label="Seções">
+    <span class="thumb" id="navThumb"></span>
+    <button data-view="home">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="3.5" width="13" height="9" rx="2" fill="none"/><path d="M4.5 6.5h1M7.5 6.5h1M10.5 6.5h1M4.5 9.5h7" fill="none"/></svg>Teclado
+    </button>
+    <button data-view="mixer">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 2v12M8 2v12M13 2v12" fill="none"/><circle cx="3" cy="10" r="1.8"/><circle cx="8" cy="5" r="1.8"/><circle cx="13" cy="9" r="1.8"/></svg>Mixer
+    </button>
+    <button data-view="settings">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="2.2" fill="none"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4" fill="none"/></svg>Ajustes
+    </button>
+  </nav>
+  <div class="side-foot">
+    <button class="mic-pill" id="micPill" title="Mutar/desmutar todos os microfones">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5a2.5 2.5 0 0 0-2.5 2.5v4a2.5 2.5 0 0 0 5 0V4A2.5 2.5 0 0 0 8 1.5Z"/><path d="M3.5 7.5a4.5 4.5 0 0 0 9 0M8 12v2.5" fill="none"/><path class="slash" d="M2.5 2.5l11 11" fill="none"/></svg>
+      <span id="micText">Microfone</span>
+    </button>
+    <p class="version" id="version"></p>
+  </div>
+</aside>
 
-<div class="scrim" id="scrim"></div>
-<nav class="drawer" id="drawer" aria-label="Menu">
-  <span class="thumb" id="drawerThumb"></span>
-  <button data-view="home" style="--n: 0">
-    <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="3.5" width="13" height="9" rx="2" fill="none"/><path d="M4.5 6.5h1M7.5 6.5h1M10.5 6.5h1M4.5 9.5h7" fill="none"/></svg>Teclado
-  </button>
-  <button data-view="mixer" style="--n: 1">
-    <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 2v12M8 2v12M13 2v12" fill="none"/><circle cx="3" cy="10" r="1.8"/><circle cx="8" cy="5" r="1.8"/><circle cx="13" cy="9" r="1.8"/></svg>Mixer
-  </button>
-  <button data-view="settings" style="--n: 2">
-    <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="2.2" fill="none"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4" fill="none"/></svg>Ajustes
-  </button>
-  <p class="version" id="version" style="--n: 3"></p>
-</nav>
-
-<main class="stage">
-  <section class="device-wrap" aria-label="Delphos">
-    <nav class="layers" id="layers" aria-label="Camadas">
-      <button data-layer="0" aria-pressed="true">Camada 0</button>
-      <button data-layer="1">1</button>
-      <button data-layer="2">2</button>
-      <button data-layer="3">3</button>
-    </nav>
-    <div class="device" id="device">
-      <span class="sheen" aria-hidden="true"></span>
-      <div class="oled-bezel"><canvas id="oled" width="128" height="32" aria-label="Espelho da tela do Delphos"></canvas></div>
-      <button class="knob" id="knob" aria-label="Encoder"><span class="knob-cap"></span></button>
-      <div class="keys" id="keys"></div>
+<main class="main">
+  <section class="page" id="view-home">
+    <header class="toolbar">
+      <div><h2>Teclado</h2><p>Clique numa tecla ou no encoder para mudar o que faz.</p></div>
+      <nav class="layers" id="layers" aria-label="Camadas">
+        <button data-layer="0" aria-pressed="true">Camada 0</button>
+        <button data-layer="1">1</button>
+        <button data-layer="2">2</button>
+        <button data-layer="3">3</button>
+      </nav>
+    </header>
+    <div class="stage">
+      <section class="device-wrap" aria-label="Delphos">
+        <div class="device" id="device">
+          <span class="sheen" aria-hidden="true"></span>
+          <div class="oled-bezel"><canvas id="oled" width="128" height="32" aria-label="Espelho da tela do Delphos"></canvas></div>
+          <button class="knob" id="knob" aria-label="Encoder"><span class="knob-cap"></span></button>
+          <div class="keys" id="keys"></div>
+        </div>
+        <div class="outdated" id="outdated" hidden>
+          <p>Tem firmware novo para o Delphos.</p>
+          <button class="primary" id="outdatedFlash">Atualizar firmware</button>
+        </div>
+      </section>
     </div>
-    <p class="tip" id="tip">Clique numa tecla ou no encoder para mudar o que faz.</p>
-    <div class="outdated" id="outdated" hidden>
-      <p>Tem firmware novo para o Delphos.</p>
-      <button class="primary" id="outdatedFlash">Atualizar firmware</button>
+  </section>
+
+  <section class="page" id="view-mixer" hidden>
+    <header class="toolbar">
+      <div><h2>Mixer</h2><p>O encoder controla o app marcado. Clique num app para escolher.</p></div>
+    </header>
+    <div class="page-body">
+      <div class="now" id="now" hidden>
+        <span class="ico now-ico"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 12V3.5l7-1.5v8.5" fill="none"/><circle cx="4.5" cy="12" r="1.8"/><circle cx="11.5" cy="10.5" r="1.8"/></svg></span>
+        <div class="now-text"><span id="nowState"></span><strong id="nowTitle"></strong></div>
+        <div class="transport">
+          <button class="icon" data-media="prev" aria-label="Faixa anterior"><svg viewBox="0 0 16 16"><path d="M4 3v10M13 3 6 8l7 5Z"/></svg></button>
+          <button class="icon play" data-media="play" aria-label="Play/Pause"><svg viewBox="0 0 16 16"><path id="playIcon" d="M5 3v10l8-5Z"/></svg></button>
+          <button class="icon" data-media="next" aria-label="Próxima faixa"><svg viewBox="0 0 16 16"><path d="M12 3v10M3 3l7 5-7 5Z"/></svg></button>
+        </div>
+      </div>
+      <h3>Apps <span class="count" id="appCount"></span></h3>
+      <ul class="channels cards" id="channels"></ul>
+      <div class="hidden-apps" id="hiddenApps" hidden>
+        <small>Ocultos. Clique para mostrar de novo.</small>
+        <div class="row wrap" id="hiddenList"></div>
+      </div>
+      <h3>Microfones</h3>
+      <ul class="mics cards" id="mics"></ul>
+    </div>
+  </section>
+
+  <section class="page" id="view-settings" hidden>
+    <header class="toolbar">
+      <div><h2>Ajustes</h2><p>Comportamento do app, firmware e dados.</p></div>
+    </header>
+    <div class="page-body">
+      <h3>Geral</h3>
+      <div class="group">
+        <label class="setting">
+          <span><strong>Iniciar com o Windows</strong><small>Abre escondido na bandeja ao ligar o PC.</small></span>
+          <input type="checkbox" id="autostart" role="switch">
+        </label>
+        <label class="setting">
+          <span><strong>Passo do volume</strong><small>Quanto cada clique do encoder muda.</small></span>
+          <span class="step"><input type="range" id="step" min="1" max="10"><output id="stepOut"></output></span>
+        </label>
+      </div>
+
+      <h3>Firmware</h3>
+      <div class="group">
+        <div class="setting fw">
+          <span><strong>Versão</strong><small id="fwInfo">—</small></span>
+          <button class="primary" id="flash">Atualizar firmware</button>
+        </div>
+        <p class="flash-msg" id="flashMsg" hidden></p>
+        <div class="setting">
+          <span><strong>Testar tela</strong><small>Desenha bordas por 10 s. Se a borda aparecer inteira, a tela está certa.</small></span>
+          <button class="ghost" id="testScreen">Testar tela</button>
+        </div>
+      </div>
+
+      <h3>Dados</h3>
+      <div class="group">
+        <div class="setting">
+          <span><strong>Teclas padrão</strong><small>Volta as 4 camadas para o mapa de fábrica.</small></span>
+          <button class="ghost" id="resetKeys">Restaurar</button>
+        </div>
+        <div class="setting" id="installRow" hidden>
+          <span><strong>Instalação</strong><small id="installInfo"></small></span>
+          <button class="primary" id="install">Instalar no PC</button>
+        </div>
+        <div class="setting">
+          <span><strong>Backup</strong><small>Teclas das 4 camadas, macros e ações num arquivo.</small></span>
+          <span class="row"><button class="ghost" id="exportBackup">Exportar</button><button class="ghost" id="importBackup">Importar</button></span>
+        </div>
+        <p class="flash-msg" id="backupMsg" hidden></p>
+        <div class="setting">
+          <span><strong>Registro</strong><small>Para investigar problemas.</small></span>
+          <button class="ghost" id="openLog">Abrir pasta do log</button>
+        </div>
+      </div>
     </div>
   </section>
 
   <aside class="keypanel" id="keyPanel" aria-label="Configurar tecla">
-    <button class="icon close" id="keyClose" aria-label="Fechar"><svg viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8" fill="none"/></svg></button>
+    <header class="kp-head">
+      <div class="edit-head"><h2 id="editTitle">Tecla</h2><p id="editCurrent"></p></div>
+      <button class="icon close" id="keyClose" aria-label="Fechar"><svg viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8" fill="none"/></svg></button>
+    </header>
     <div class="pop-body" id="view-keys">
       <div id="keysEdit" hidden>
-        <div class="edit-head">
-          <h2 id="editTitle">Tecla</h2>
-          <p id="editCurrent"></p>
-        </div>
         <div class="slots" id="slots" hidden>
           <button data-slot="ccw">Girar ←</button>
           <button data-slot="cw">Girar →</button>
@@ -107,75 +189,6 @@
           <div class="row"><input id="codeInput" placeholder="0x0000"><button class="primary" id="codeSave">Usar código</button></div>
         </div>
         <p class="error" id="editError" hidden></p>
-      </div>
-    </div>
-  </aside>
-
-  <aside class="panel" id="sheet" aria-label="Opções">
-    <button class="icon close" id="sheetClose" aria-label="Fechar"><svg viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8" fill="none"/></svg></button>
-    <div class="view" id="view-mixer" hidden>
-      <h2>Mixer</h2>
-      <p class="lead">O encoder controla o app marcado. Clique no nome para trocar.</p>
-      <ul class="channels" id="channels"></ul>
-      <div class="hidden-apps" id="hiddenApps" hidden>
-        <small>Ocultos. Clique para mostrar de novo.</small>
-        <div class="row wrap" id="hiddenList"></div>
-      </div>
-      <div class="now" id="now" hidden>
-        <div class="now-text"><span id="nowState"></span><strong id="nowTitle"></strong></div>
-        <div class="transport">
-          <button class="icon" data-media="prev" aria-label="Faixa anterior"><svg viewBox="0 0 16 16"><path d="M4 3v10M13 3 6 8l7 5Z"/></svg></button>
-          <button class="icon play" data-media="play" aria-label="Play/Pause"><svg viewBox="0 0 16 16"><path id="playIcon" d="M5 3v10l8-5Z"/></svg></button>
-          <button class="icon" data-media="next" aria-label="Próxima faixa"><svg viewBox="0 0 16 16"><path d="M12 3v10M3 3l7 5-7 5Z"/></svg></button>
-        </div>
-      </div>
-      <h3>Microfones</h3>
-      <ul class="mics" id="mics"></ul>
-    </div>
-
-    <div class="view" id="view-settings" hidden>
-      <h2>Ajustes</h2>
-      <div class="group">
-        <label class="setting">
-          <span><strong>Iniciar com o Windows</strong><small>Abre escondido na bandeja ao ligar o PC.</small></span>
-          <input type="checkbox" id="autostart" role="switch">
-        </label>
-        <label class="setting">
-          <span><strong>Passo do volume</strong><small>Quanto cada clique do encoder muda.</small></span>
-          <span class="step"><input type="range" id="step" min="1" max="10"><output id="stepOut"></output></span>
-        </label>
-      </div>
-
-      <div class="group">
-        <div class="setting fw">
-          <span><strong>Firmware</strong><small id="fwInfo">—</small></span>
-          <button class="primary" id="flash">Atualizar firmware</button>
-        </div>
-        <p class="flash-msg" id="flashMsg" hidden></p>
-        <div class="setting">
-          <span><strong>Testar tela</strong><small>Desenha bordas por 10 s. Se a borda aparecer inteira, a tela está certa.</small></span>
-          <button class="ghost" id="testScreen">Testar tela</button>
-        </div>
-      </div>
-
-      <div class="group">
-        <div class="setting">
-          <span><strong>Teclas padrão</strong><small>Volta as 4 camadas para o mapa de fábrica.</small></span>
-          <button class="ghost" id="resetKeys">Restaurar</button>
-        </div>
-        <div class="setting" id="installRow" hidden>
-          <span><strong>Instalação</strong><small id="installInfo"></small></span>
-          <button class="primary" id="install">Instalar no PC</button>
-        </div>
-        <div class="setting">
-          <span><strong>Backup</strong><small>Teclas das 4 camadas, macros e ações num arquivo.</small></span>
-          <span class="row"><button class="ghost" id="exportBackup">Exportar</button><button class="ghost" id="importBackup">Importar</button></span>
-        </div>
-        <p class="flash-msg" id="backupMsg" hidden></p>
-        <div class="setting">
-          <span><strong>Registro</strong><small>Para investigar problemas.</small></span>
-          <button class="ghost" id="openLog">Abrir pasta do log</button>
-        </div>
       </div>
     </div>
   </aside>

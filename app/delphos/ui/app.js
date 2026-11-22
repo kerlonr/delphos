@@ -114,7 +114,7 @@ function select(slot) {
     const i = catalog.findIndex((c) => c.items.some((item) => item.code === code));
     if (i >= 0) category = i;
   }
-  if (body.classList.contains("sheet-open")) closeSheet();
+  if (currentView !== "home") showView("home");
   renderKeys();
   renderEditor();
   openKeyPanel();
@@ -323,20 +323,28 @@ $("resetKeys").addEventListener("click", () => assign(api.reset_keys()));
 
 const escapeHtml = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
+const TONES = ["157, 140, 255", "143, 211, 255", "76, 195, 138", "245, 183, 107", "255, 128, 170"]; // cor do ícone de cada app
+
 function buildChannel(app) {
   const li = document.createElement("li");
   li.dataset.key = app.key;
-  li.innerHTML = `<span class="pick"></span><button class="name"></button>
-    <input type="range" min="0" max="100" aria-label="Volume"><output></output>
+  li.className = "card";
+  li.innerHTML = `<span class="ico"></span><div class="meta"><button class="name"></button><output></output></div>
+    <input type="range" min="0" max="100" aria-label="Volume">
     <button class="icon mute" aria-label="Mutar"><svg viewBox="0 0 16 16"><path d="M2 6h3l4-3v10l-4-3H2Z"/><path class="x" d="M11 6l4 4M15 6l-4 4" fill="none"/></svg></button>
     <button class="icon hide" aria-label="Ocultar do mixer" title="Ocultar do mixer"><svg viewBox="0 0 16 16"><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5Z" fill="none"/><path d="M2 14 14 2" fill="none"/></svg></button>`;
+  const ico = li.querySelector(".ico");
+  ico.textContent = app.key === "__master__" ? "" : app.name.trim()[0].toUpperCase();
+  ico.classList.toggle("master", app.key === "__master__");
+  if (app.key !== "__master__") ico.style.setProperty("--tone", TONES[[...app.key].reduce((h, c) => h + c.charCodeAt(0), 0) % TONES.length]);
+  li.addEventListener("click", (e) => { if (!e.target.closest("button, input")) api.select(app.key); });
   const hide = li.querySelector(".hide");
   hide.hidden = app.key === "__master__";
   hide.addEventListener("click", () => api.hide_app(app.key, app.name));
   const slider = li.querySelector("input");
   li.querySelector(".name").addEventListener("click", () => api.select(app.key));
   slider.addEventListener("input", () => {
-    li.querySelector("output").textContent = slider.value;
+    li.querySelector("output").textContent = `${slider.value}%`;
     slider.style.setProperty("--v", `${slider.value}%`);
     api.set_volume(app.key, Number(slider.value));
   });
@@ -366,10 +374,11 @@ function renderMixer() {
     if (document.activeElement !== slider) {
       slider.value = app.volume;
       slider.style.setProperty("--v", `${app.volume}%`);
-      li.querySelector("output").textContent = app.volume;
+      li.querySelector("output").textContent = `${app.volume}%`;
     }
   }
 
+  $("appCount").textContent = st.apps.length;
   const hidden = st.hidden_apps;
   $("hiddenApps").hidden = !hidden.length;
   const hkeys = hidden.map((a) => a.key).join("|");
@@ -392,7 +401,7 @@ function renderMixer() {
   $("playIcon").setAttribute("d", media.status === 1 ? "M4 3h3v10H4ZM9 3h3v10H9Z" : "M5 3v10l8-5Z");
 
   $("mics").innerHTML = st.mics.length
-    ? st.mics.map(([name, muted]) => `<li><b>${escapeHtml(name)}</b><span class="${muted ? "m" : ""}">${muted ? "mudo" : "ativo"}</span></li>`).join("")
+    ? st.mics.map(([name, muted]) => `<li class="card"><span class="ico mic${muted ? " m" : ""}"></span><b>${escapeHtml(name)}</b><span class="${muted ? "m" : ""}">${muted ? "mudo" : "ativo"}</span></li>`).join("")
     : "<li>Nenhum microfone encontrado</li>";
 }
 for (const b of document.querySelectorAll("[data-media]")) b.addEventListener("click", () => api.media(b.dataset.media));
@@ -404,7 +413,7 @@ async function loadSettings() {
   $("autostart").checked = s.autostart;
   $("step").value = s.step;
   $("step").style.setProperty("--v", `${(s.step - 1) / 9 * 100}%`);
-  $("version").textContent = `Delphos ${s.version}`;
+  $("version").textContent = `v${s.version}`;
   $("stepOut").textContent = `${s.step}%`;
   $("installRow").hidden = !s.is_exe;
   if (s.running_installed) {
@@ -463,22 +472,15 @@ function renderFirmware() {
 
 // Geral
 
-// Navegação: o Delphos fica sempre na tela. Tecla abre um balão preso a ela;
-// mixer e ajustes sobem num painel; o menu (burger) entra pela esquerda.
+// Navegação como no Termius: barra lateral fixa com as páginas; a tecla abre um painel à direita.
 
 let currentView = "home";
 const body = document.body;
 
-function moveDrawerThumb() {
-  const item = document.querySelector(`.drawer [data-view="${currentView}"]`);
-  $("drawerThumb").style.height = `${item.offsetHeight}px`;
-  $("drawerThumb").style.transform = `translateY(${item.offsetTop}px)`;
-}
-
-function markNav(view) {
-  currentView = view;
-  for (const t of document.querySelectorAll(".drawer [data-view]")) t.setAttribute("aria-current", String(t.dataset.view === view));
-  moveDrawerThumb();
+function moveNavThumb() {
+  const item = document.querySelector(`.nav [data-view="${currentView}"]`);
+  $("navThumb").style.height = `${item.offsetHeight}px`;
+  $("navThumb").style.transform = `translateY(${item.offsetTop}px)`;
 }
 
 function restartEnter(el) {
@@ -488,32 +490,26 @@ function restartEnter(el) {
 }
 
 function showView(view) {
-  if (view === "home") return closeSheet();
-  closeKeyPanel();
-  for (const id of ["mixer", "settings"]) $(`view-${id}`).hidden = id !== view;
-  if (view !== currentView || !body.classList.contains("sheet-open")) {
-    restartEnter($(`view-${view}`));
-    $("sheet").scrollTop = 0;
-  }
-  body.classList.add("sheet-open");
-  markNav(view);
+  if (view !== "home") closeKeyPanel();
+  for (const id of ["home", "mixer", "settings"]) $(`view-${id}`).hidden = id !== view;
+  if (view !== currentView) restartEnter($(`view-${view}`));
+  currentView = view;
+  for (const t of document.querySelectorAll(".nav [data-view]")) t.setAttribute("aria-current", String(t.dataset.view === view));
+  moveNavThumb();
 }
 
-function closeSheet() {
-  body.classList.remove("sheet-open");
-  markNav("home");
-}
-
-// Painel da tecla: a janela alarga para a direita (o Delphos não sai do lugar) e o painel desliza.
+// Painel da tecla: na janela compacta, a janela alarga para a direita e o painel desliza para dentro;
+// o Delphos não sai do lugar (largura travada em --left-w) e continua clicável.
 const KEY_PANEL_W = 360;
+const mainW = () => document.querySelector(".main").clientWidth;
+let resizing = false;
 
 async function openKeyPanel() {
   restartEnter($("view-keys"));
   $("view-keys").scrollTop = 0;
   if (body.classList.contains("edit-open")) return;
-  // janela compacta: alarga e o Delphos fica com a largura de agora; já larga: divide o espaço
-  const grow = innerWidth < 424 + KEY_PANEL_W - 10;
-  body.style.setProperty("--left-w", `${grow ? innerWidth : innerWidth - KEY_PANEL_W}px`);
+  const grow = mainW() < 440 + KEY_PANEL_W - 10;
+  body.style.setProperty("--left-w", `${grow ? mainW() : mainW() - KEY_PANEL_W}px`);
   body.classList.add("edit-open");
   if (grow) {
     resizing = true;
@@ -534,37 +530,19 @@ async function closeKeyPanel() {
   resizing = false;
 }
 
-let resizing = false;
 window.addEventListener("resize", () => {
   // o usuário mudou o tamanho com o painel aberto: o Delphos fica com o que sobra
-  if (!resizing && body.classList.contains("edit-open")) body.style.setProperty("--left-w", `${Math.max(innerWidth - KEY_PANEL_W, 300)}px`);
+  if (!resizing && body.classList.contains("edit-open")) body.style.setProperty("--left-w", `${Math.max(mainW() - KEY_PANEL_W, 300)}px`);
 });
 
-function setDrawer(open) {
-  body.classList.toggle("drawer-open", open);
-  $("burger").setAttribute("aria-expanded", String(open));
-  if (open) moveDrawerThumb();
-}
-
-for (const t of document.querySelectorAll(".drawer [data-view]")) {
-  t.addEventListener("click", () => {
-    showView(t.dataset.view);
-    setTimeout(() => setDrawer(false), 140); // deixa ver o indicador chegar antes de fechar
-  });
-}
-$("burger").addEventListener("click", () => setDrawer(!body.classList.contains("drawer-open")));
-$("scrim").addEventListener("click", () => setDrawer(false));
-$("sheetClose").addEventListener("click", closeSheet);
+for (const t of document.querySelectorAll(".nav [data-view]")) t.addEventListener("click", () => showView(t.dataset.view));
 $("keyClose").addEventListener("click", closeKeyPanel);
 // clique no fundo vazio (fora do Delphos) fecha o painel da tecla
-$("keyPanel").parentElement.querySelector(".device-wrap").addEventListener("click", (e) => {
-  if (e.target === e.currentTarget) closeKeyPanel();
+document.querySelector(".stage").addEventListener("click", (e) => {
+  if (e.target === e.currentTarget || e.target.classList.contains("device-wrap")) closeKeyPanel();
 });
 document.addEventListener("keydown", (e) => {
-  if (e.key !== "Escape" || captureMode) return;
-  if (body.classList.contains("drawer-open")) setDrawer(false);
-  else if (body.classList.contains("edit-open")) closeKeyPanel();
-  else if (body.classList.contains("sheet-open")) closeSheet();
+  if (e.key === "Escape" && !captureMode) closeKeyPanel();
 });
 
 // Onda de luz a partir do ponto clicado na tecla
@@ -600,6 +578,7 @@ function renderDevice() {
 
   $("micPill").classList.toggle("muted", st.mic_muted);
   $("micText").textContent = st.mic_muted ? "Microfone mudo" : "Microfone ativo";
+  $("micPill").title = `${$("micText").textContent}. Clique para ${st.mic_muted ? "desmutar" : "mutar"} todos.`;
   $("conn").title = st.connected ? "Delphos conectado" : "Delphos desconectado. Confira o cabo USB.";
   $("conn").classList.toggle("ok", st.connected);
 }
@@ -664,12 +643,7 @@ document.addEventListener("pointerdown", () => {
 window.delphosHidden = () => {
   sleep();
   // volta ao estado inicial: ao reabrir, a abertura roda limpa (a janela volta ao tamanho compacto no app.py)
-  setDrawer(false);
-  captureMode = null;
-  selected = null;
-  renderKeys();
-  body.classList.remove("edit-open");
-  closeSheet();
+  closeKeyPanel();
   document.body.classList.add("booting"); // ao reabrir, a tela já começa limpa para a abertura
 };
 window.delphosShown = () => {

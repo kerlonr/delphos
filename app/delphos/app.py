@@ -56,7 +56,7 @@ def dark_title_bar(hwnd: int) -> None:
         ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, attr, ctypes.byref(ctypes.c_int(value)), 4)
 
 
-COMPACT_W = 440   # largura da janela compacta (px lógicos, com a borda)
+COMPACT_W = 520   # largura da janela compacta (px lógicos, com a borda): trilho lateral + Delphos
 EDITOR_W = 360    # largura do painel da tecla
 
 
@@ -136,7 +136,7 @@ def main() -> int:
     api = Api(engine, prefs)
 
     window = webview.create_window("Delphos", resource("delphos", "ui", "index.html"), js_api=api,
-                                   width=COMPACT_W, height=640, min_size=(420, 600),
+                                   width=COMPACT_W, height=640, min_size=(500, 600),
                                    background_color=BG, hidden="--hidden" in sys.argv)
     api.visible = "--hidden" not in sys.argv
     quitting = threading.Event()
